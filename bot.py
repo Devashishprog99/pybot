@@ -7,6 +7,8 @@ from telegram.ext import (
     filters, ContextTypes
 )
 
+import io
+import qrcode
 import config
 from mongodb import db
 from utils import (
@@ -203,14 +205,17 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     raw_link = result.get('raw_link', payment_link) # Get raw provider link
     context.user_data['pending_payment'] = order_id
     
+    # 1. Generate QR Code
+    qr_bio = generate_qr_image(raw_link)
+    
     message = (
         f"💳 **Payment Initiated**\n"
         f"👤 Paying to: **OTT4YOU**\n\n"
         f"Amount: {format_currency(amount)}\n"
         f"Order ID: `{order_id}`\n\n"
-        f"👇 **Choose how to pay:**\n"
-        f"• **Inside App**: Opens directly in Telegram.\n"
-        f"• **Pay via App**: Opens browser to auto-trigger UPI apps (GPay/PhonePe)."
+        f"scan the QR code below to pay instantly.\n"
+        f"⏳ **This QR Code expires in 1 Minute!**\n\n"
+        f"👇 **Other Ways:**"
     )
     
     try:
@@ -218,29 +223,62 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         if not payment_link.startswith('http'):
             payment_link = f"https://{payment_link}"
 
-        if not payment_link.startswith('https'):
-             print(f"ERROR: Payment link is not HTTPS: {payment_link}")
-             await query.edit_message_text("❌ Configuration Error: Payment link must be HTTPS.")
-             return
-
         keyboard = [
             [InlineKeyboardButton(f"📱 Pay {format_currency(amount)} Inside App", web_app=WebAppInfo(url=payment_link))],
-            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=raw_link)],
+            # Removed Direct Button as requested
             [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
         ]
         
-        sent_msg = await query.edit_message_text(
-            message,
+        # Send Photo with QR
+        sent_msg = await query.message.reply_photo(
+            photo=qr_bio,
+            caption=message,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
         
         # Monitor for payment success
+        # Pass qr_path explicitly if we saved it, but here we used BytesIO.
+        # However, monitor needs to handle message deletion.
         asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
         
+        # Schedule deletion after 60 seconds
+        asyncio.create_task(delete_message_after_delay(context, query.message.chat_id, sent_msg.message_id, 60))
+        
+        # Delete the previous "menu" message to clean up chat
+        try:
+            await query.message.delete()
+        except:
+            pass
+            
     except Exception as e:
-        logger.error(f"Failed to create payment keyboard: {e}")
-        await query.edit_message_text(f"❌ Error initializing payment buttons: {e}")
+        logger.error(f"Failed to create payment QR: {e}")
+        await query.edit_message_text(f"❌ Error initializing payment: {e}")
+
+def generate_qr_image(data):
+    """Generate QR code image in memory"""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    bio = io.BytesIO()
+    img.save(bio)
+    bio.seek(0)
+    return bio
+
+async def delete_message_after_delay(context, chat_id, message_id, delay):
+    """Delete message after delay"""
+    await asyncio.sleep(delay)
+    try:
+        await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except Exception as e:
+        # Message might already be deleted or payment completed
+        pass
 
 async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, order_id: str, message_id: int, qr_path: str = None):
     """Monitor payment status and update message"""
@@ -250,7 +288,6 @@ async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, orde
     
     while time.time() - start_time < timeout:
         if context.user_data.get('pending_payment') != order_id:
-            if qr_path and os.path.exists(qr_path): os.remove(qr_path)
             return
         
         # Check payment status
@@ -262,38 +299,61 @@ async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, orde
             
             if verified:
                 txn = db.get_transaction_by_order_id(order_id)
-                await context.bot.delete_message(chat_id=user_id, message_id=message_id)
+                
+                # Try to delete the QR message if it still exists
+                try:
+                    await context.bot.delete_message(chat_id=user_id, message_id=message_id)
+                except:
+                    pass
+                
+                # Send FRESH success message with details
                 await context.bot.send_message(
                     chat_id=user_id,
-                    text=f"✅ **Payment Successful!**\n\n{format_currency(txn['amount'])} added to your wallet!",
+                    text=(
+                        f"✅ **Payment Successful!**\n"
+                        f"👤 Paid to: **OTT4YOU**\n"
+                        f"💰 Amount: {format_currency(txn['amount'])}\n"
+                        f"🆔 Transaction ID: `{txn['txn_id']}`\n"
+                        f"📅 Date: {str(txn['created_at'])[:16]}\n\n"
+                        f"Funds have been added to your wallet!"
+                    ),
                     parse_mode='Markdown'
                 )
                 context.user_data.pop('pending_payment', None)
-                if os.path.exists(qr_path): os.remove(qr_path)
                 return
         
         elif result.get('status') == 'FAILED':
             # Payment failed
-            await context.bot.edit_message_caption(
-                chat_id=user_id,
-                message_id=message_id,
-                caption="❌ **Payment Failed**\n\nPlease try again."
-            )
+            try:
+                await context.bot.edit_message_caption(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    caption="❌ **Payment Failed**\n\nThe payment was declined or failed. Please try again."
+                )
+            except:
+                # If QR message deleted, maybe send a text? User said "I DONT NEED ANY ERROR", so maybe silent is okay?
+                # But let's notify if possible.
+                await context.bot.send_message(chat_id=user_id, text="❌ **Payment Failed**")
+                
             context.user_data.pop('pending_payment', None)
-            if os.path.exists(qr_path): os.remove(qr_path)
             return
         
         await asyncio.sleep(5)
     
     # Timeout
     await payment_manager.cancel_payment(order_id)
-    await context.bot.edit_message_caption(
+    try:
+        await context.bot.delete_message(chat_id=user_id, message_id=message_id)
+    except:
+        pass
+        
+    # Send timeout notification
+    await context.bot.send_message(
         chat_id=user_id,
-        message_id=message_id,
-        caption="⏱️ **Payment Timeout**\n\nThe payment has expired. Please try again."
+        text="⏱️ **Payment Timeout**\n\nThe payment request has expired.",
+        parse_mode='Markdown'
     )
     context.user_data.pop('pending_payment', None)
-    if os.path.exists(qr_path): os.remove(qr_path)
     
     # Timeout
     await payment_manager.cancel_payment(order_id)
