@@ -124,8 +124,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop('awaiting_support_message', None)
         return
 
-    # User ID detection for admins
-    elif admin_handler.is_admin(user_id):
+    # User ID detection for admins (forwarded messages or numeric IDs)
+    if admin_handler.is_admin(user_id):
         # Check if forwarded message or numeric ID
         target_uid = None
         
