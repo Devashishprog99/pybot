@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0b0f1a;
+            --card: #161c2d;
+            --text: #f3f4f6;
+            --dim: #9ca3af;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav a {
+            color: var(--dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .payments {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .payment-card {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .payment-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .payment-info p {
+            color: var(--dim);
+            font-size: 0.9rem;
+        }
+
+        .payment-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--dim);
+            background: var(--card);
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>💸 Pending Payments</h1>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/admin/inventory">Inventory</a>
+            <a href="/admin/payments" class="active">Payments</a>
+            <a href="/admin/support">Support</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="payments">
+        {% if payments %}
+        {% for p in payments %}
+        <div class="payment-card" id="payment-{{ p.user_id }}">
+            <div class="payment-info">
+                <h3>{{ p.username or p.user_id }}</h3>
+                <p>📧 {{ p.sold_count }} Gmails sold • Last sale: {{ p.last_sale_date or 'N/A' }}</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div class="payment-amount">₹{{ p.amount_owed }}</div>
+                <button class="btn btn-success" onclick="markPaid({{ p.user_id }}, this)">✅ Mark Paid</button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty">
+            <h3>✅ All Paid!</h3>
+            <p>No pending payments to process.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        async function markPaid(userId, btn) {
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const res = await fetch('/admin/payments/' + userId + '/mark_paid', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const card = document.getElementById('payment-' + userId);
+                    card.style.background = 'rgba(16, 185, 129, 0.1)';
+                    btn.textContent = '✅ Paid!';
+                    setTimeout(() => card.remove(), 1000);
+                } else {
+                    alert('Error: ' + data.error);
+                    btn.disabled = false;
+                    btn.textContent = '✅ Mark Paid';
+                }
+            } catch (e) {
+                alert('Failed to process payment');
+                btn.disabled = false;
+                btn.textContent = '✅ Mark Paid';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0b0f1a;
+            --card: #161c2d;
+            --text: #f3f4f6;
+            --dim: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav a {
+            color: var(--dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-label {
+            color: var(--dim);
+            margin-top: 0.5rem;
+        }
+
+        h2 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .table-container {
+            background: var(--card);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .badge-available {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .badge-sold {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📦 Inventory</h1>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/admin/inventory" class="active">Inventory</a>
+            <a href="/admin/payments">Payments</a>
+            <a href="/admin/support">Support</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_gmails or 0 }}</div>
+            <div class="stat-label">Total Gmails</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.available_gmails or 0 }}</div>
+            <div class="stat-label">Available</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.sold_gmails or 0 }}</div>
+            <div class="stat-label">Sold</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.pending_gmails or 0 }}</div>
+            <div class="stat-label">Pending Approval</div>
+        </div>
+    </div>
+
+    <h2>Sellers Stock</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Seller</th>
+                    <th>Pending</th>
+                    <th>Available</th>
+                    <th>Sold</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for seller in sellers %}
+                <tr>
+                    <td>{{ seller.username or seller.user_id }}</td>
+                    <td><span class="badge badge-pending">{{ seller.pending_gmails or 0 }}</span></td>
+                    <td><span class="badge badge-available">{{ seller.available_gmails or 0 }}</span></td>
+                    <td><span class="badge badge-sold">{{ seller.sold_gmails or 0 }}</span></td>
+                    <td>{{ (seller.pending_gmails or 0) + (seller.available_gmails or 0) + (seller.sold_gmails or 0) }}
+                    </td>
+                    <td>{% if seller.is_approved %}✅ Approved{% else %}⏳ Pending{% endif %}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--dim);">No sellers found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

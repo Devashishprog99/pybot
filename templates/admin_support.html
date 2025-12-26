@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Desk - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0b0f1a;
+            --card: #161c2d;
+            --text: #f3f4f6;
+            --dim: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav a {
+            color: var(--dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: var(--card);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--primary);
+        }
+
+        .tickets {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .ticket {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .ticket-id {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status.open {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .status.resolved {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status.closed {
+            background: rgba(156, 163, 175, 0.2);
+            color: var(--dim);
+        }
+
+        .ticket-subject {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .ticket-message {
+            color: var(--dim);
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .ticket-meta {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.85rem;
+            color: var(--dim);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .reply-box {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .reply-box.show {
+            display: block;
+        }
+
+        .reply-box textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: var(--text);
+            padding: 1rem;
+            min-height: 100px;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--dim);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🎫 Support Desk</h1>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/admin/inventory">Inventory</a>
+            <a href="/admin/payments">Payments</a>
+            <a href="/admin/support" class="active">Support</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="filters">
+        <a href="/admin/support" class="filter-btn {% if not current_status %}active{% endif %}">All</a>
+        <a href="/admin/support?status=open"
+            class="filter-btn {% if current_status == 'open' %}active{% endif %}">Open</a>
+        <a href="/admin/support?status=resolved"
+            class="filter-btn {% if current_status == 'resolved' %}active{% endif %}">Resolved</a>
+        <a href="/admin/support?status=closed"
+            class="filter-btn {% if current_status == 'closed' %}active{% endif %}">Closed</a>
+    </div>
+
+    <div class="tickets">
+        {% if tickets %}
+        {% for ticket in tickets %}
+        <div class="ticket" id="ticket-{{ ticket.ticket_id }}">
+            <div class="ticket-header">
+                <span class="ticket-id">#{{ ticket.ticket_id }}</span>
+                <span class="status {{ ticket.status }}">{{ ticket.status | upper }}</span>
+            </div>
+            <div class="ticket-subject">{{ ticket.subject }}</div>
+            <div class="ticket-message">{{ ticket.message }}</div>
+            <div class="ticket-meta">
+                <span>👤 {{ ticket.username or ticket.user_id }}</span>
+                <span>📅 {{ ticket.created_at }}</span>
+            </div>
+            {% if ticket.admin_reply %}
+            <div style="margin-top: 1rem; padding: 1rem; background: rgba(139, 92, 246, 0.1); border-radius: 0.5rem;">
+                <strong>Admin Reply:</strong> {{ ticket.admin_reply }}
+            </div>
+            {% endif %}
+            {% if ticket.status == 'open' %}
+            <div class="actions">
+                <button class="btn btn-primary" onclick="toggleReply({{ ticket.ticket_id }})">Reply</button>
+                <button class="btn btn-success" onclick="resolveTicket({{ ticket.ticket_id }}, '')">Mark
+                    Resolved</button>
+            </div>
+            <div class="reply-box" id="reply-{{ ticket.ticket_id }}">
+                <textarea id="reply-text-{{ ticket.ticket_id }}" placeholder="Type your reply..."></textarea>
+                <button class="btn btn-primary" onclick="sendReply({{ ticket.ticket_id }})">Send Reply</button>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty">No tickets found</div>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleReply(id) {
+            document.getElementById('reply-' + id).classList.toggle('show');
+        }
+
+        async function sendReply(id) {
+            const reply = document.getElementById('reply-text-' + id).value;
+            if (!reply) return alert('Please enter a reply');
+            await resolveTicket(id, reply);
+        }
+
+        async function resolveTicket(id, reply) {
+            try {
+                const res = await fetch('/admin/support/' + id + '/reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reply: reply, status: 'resolved' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (e) {
+                alert('Failed to update ticket');
+            }
+        }
+    </script>
+</body>
+
+</html>
