@@ -209,13 +209,14 @@
                     <td>
                         {% if not seller.is_approved %}
                         <button class="btn btn-success"
-                            onclick="approveSeller({{ seller.seller_id }}, this)">Approve</button>
+                            onclick="approveSeller('{{ seller.seller_id }}', this)">Approve</button>
                         <button class="btn btn-danger"
-                            onclick="rejectSeller({{ seller.seller_id }}, this)">Reject</button>
+                            onclick="rejectSeller('{{ seller.seller_id }}', this)">Reject</button>
                         {% else %}
                         <span style="color: var(--dim);">-</span>
                         {% endif %}
                     </td>
+
                 </tr>
                 {% else %}
                 <tr>

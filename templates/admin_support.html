@@ -249,15 +249,16 @@
             {% endif %}
             {% if ticket.status == 'open' %}
             <div class="actions">
-                <button class="btn btn-primary" onclick="toggleReply({{ ticket.ticket_id }})">Reply</button>
-                <button class="btn btn-success" onclick="resolveTicket({{ ticket.ticket_id }}, '')">Mark
+                <button class="btn btn-primary" onclick="toggleReply('{{ ticket.ticket_id }}')">Reply</button>
+                <button class="btn btn-success" onclick="resolveTicket('{{ ticket.ticket_id }}', '')">Mark
                     Resolved</button>
             </div>
             <div class="reply-box" id="reply-{{ ticket.ticket_id }}">
                 <textarea id="reply-text-{{ ticket.ticket_id }}" placeholder="Type your reply..."></textarea>
-                <button class="btn btn-primary" onclick="sendReply({{ ticket.ticket_id }})">Send Reply</button>
+                <button class="btn btn-primary" onclick="sendReply('{{ ticket.ticket_id }}')">Send Reply</button>
             </div>
             {% endif %}
+
         </div>
         {% endfor %}
         {% else %}
