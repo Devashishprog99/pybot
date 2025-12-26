@@ -173,13 +173,13 @@ async def show_wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.callback_query:
         await update.callback_query.edit_message_text(
             message,
-            reply_markup=build_wallet_keyboard(balance),
+            reply_markup=build_wallet_keyboard(),
             parse_mode='Markdown'
         )
     else:
         await update.message.reply_text(
             message,
-            reply_markup=build_wallet_keyboard(balance),
+            reply_markup=build_wallet_keyboard(),
             parse_mode='Markdown'
         )
 
