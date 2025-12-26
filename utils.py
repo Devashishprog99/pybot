@@ -42,6 +42,21 @@ def parse_gmail_list(text: str) -> list:
     
     return gmails
 
+def check_gmail_credentials(email: str, password: str) -> bool:
+    """Check if Gmail credentials are valid using IMAP"""
+    import imaplib
+    try:
+        # Connect to Gmail IMAP
+        server = imaplib.IMAP4_SSL('imap.gmail.com')
+        # Try to login
+        server.login(email, password)
+        # Logout if successful
+        server.logout()
+        return True
+    except Exception as e:
+        # Login failed
+        return False
+
 # ==================== FORMATTING ====================
 
 def format_currency(amount: float) -> str:

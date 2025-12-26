@@ -162,15 +162,47 @@ class SellerHandler:
                 return
             seller = db.get_seller(user_id)
         
-        # Add Gmails to database
+        # Validate Gmail credentials
+        from utils import check_gmail_credentials
+        await query.edit_message_text("🔍 **Validating credentials...**\n\nPlease wait...")
+        
+        valid_gmails = []
+        invalid_count = 0
+        
+        for email, password in gmails:
+            if check_gmail_credentials(email, password):
+                valid_gmails.append((email, password))
+            else:
+                invalid_count += 1
+        
+        # Check if we have any valid accounts
+        if not valid_gmails:
+            await query.edit_message_text(
+                "❌ **Validation Failed!**\n\n"
+                f"⚠️ All {len(gmails)} accounts have invalid credentials.\n\n"
+                "Please ensure:\n"
+                "• Email and password are correct\n"
+                "• Less secure app access is enabled\n"
+                "• Accounts are not locked\n\n"
+                "Try again with valid accounts.",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Add valid Gmails to database
         batch_id = generate_batch_id()
-        success = db.add_gmails(seller['seller_id'], gmails, batch_id)
+        success = db.add_gmails(seller['seller_id'], valid_gmails, batch_id)
         
         if success:
+            validation_msg = f"\n\n✅ Valid: {len(valid_gmails)}"
+            if invalid_count > 0:
+                validation_msg += f"\n❌ Invalid: {invalid_count} (rejected)"
+            
             await query.edit_message_text(
                 "✅ **Submission Successful!**\n\n"
-                f"📧 {len(gmails)} Gmails submitted for approval\n"
-                f"🆔 Batch ID: `{batch_id}`\n\n"
+                f"📧 {len(valid_gmails)} Gmails submitted for approval\n"
+                f"🆔 Batch ID: `{batch_id}`\n"
+                f"{validation_msg}\n\n"
                 "⏳ Your submission is pending admin approval.\n"
                 "You'll be notified once approved!",
                 parse_mode='Markdown'
@@ -180,7 +212,7 @@ class SellerHandler:
             context.user_data.clear()
             
             # Notify admins
-            await SellerHandler.notify_admins_new_submission(context, user_id, len(gmails), batch_id)
+            await SellerHandler.notify_admins_new_submission(context, user_id, len(valid_gmails), batch_id)
         else:
             await query.edit_message_text("❌ Error submitting Gmails. Please try again.")
     
