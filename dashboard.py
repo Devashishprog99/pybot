@@ -9,6 +9,17 @@ import config
 
 # Always use SQLite database (same as Telegram bot)
 from database import db
+import config
+
+# Database path logging for debugging
+import os
+print("=" * 50)
+print("WEB DASHBOARD STARTING - Database Info:")
+print(f"DATABASE_PATH: {config.DATABASE_PATH}")
+print(f"DB instance path: {db.db_path}")
+print(f"Absolute path: {os.path.abspath(db.db_path)}")
+print(f"File exists: {os.path.exists(db.db_path)}")
+print("=" * 50)
 
 app = Flask(__name__)
 app.secret_key = config.CASHFREE_SECRET_KEY or "dev-secret-key-123" # Fallback if key missing

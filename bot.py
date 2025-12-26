@@ -966,15 +966,6 @@ async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='Markdown'
     )
 
-def main():
-    """Start the bot"""
-    try:
-        # Validate configuration
-        config.validate_config()
-        
-        # Create application
-        app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
-        
         # Add handlers
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("check", check_command))
