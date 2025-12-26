@@ -153,8 +153,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle photo uploads"""
     if context.user_data.get('seller_step') == 1:
-        # UPI QR for seller registration
+        # UPI QR for seller registration (old flow, deprecated)
         await seller_handler.handle_upi_qr(update, context)
+    elif context.user_data.get('seller_step') == 3:
+        # UPI QR for new seller flow (after Gmail validation)
+        await seller_handler.handle_upi_qr(update, context)
+        # Then finalize the submission
+        await seller_handler.finalize_submission(update, context)
     elif context.user_data.get('withdrawal_step'):
         # UPI QR for withdrawal
         await seller_handler.submit_withdrawal(update, context)

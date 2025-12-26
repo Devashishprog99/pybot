@@ -167,26 +167,66 @@ class SellerHandler:
         if not valid_gmails:
             await query.edit_message_text(
                 "❌ **Validation Failed!**\n\n"
-                f"⚠️ All {len(gmails)} accounts have invalid credentials.\n\n"
+                f"⚠️ All {len(gmails)} accounts have invalid format.\n\n"
                 "Please ensure:\n"
-                "• Email and password are correct\n"
-                "• Less secure app access is enabled\n"
-                "• Accounts are not locked\n\n"
+                "• Email ends with @gmail.com\n"
+                "• Password is at least 4 characters\n"
+                "• Format is email:password\n\n"
                 "Try again with valid accounts.",
                 parse_mode='Markdown'
             )
             return
         
-        # Add valid Gmails to database
+        # Store validated gmails and batch_id in context for later
         batch_id = generate_batch_id()
+        context.user_data['validated_gmails'] = valid_gmails
+        context.user_data['batch_id'] = batch_id
+        context.user_data['validation_msg'] = f"\n\n✅ Valid: {len(valid_gmails)}" + (f"\n❌ Invalid: {invalid_count} (rejected)" if invalid_count > 0 else "")
+        
+        # Now ask for UPI QR (final step)
+        context.user_data['seller_step'] = 3  # Step 3: UPI QR upload
+        await query.edit_message_text(
+            f"✅ **{len(valid_gmails)} Gmails Validated!**\n\n"
+            f"🆔 Batch ID: `{batch_id}`\n"
+            f"{context.user_data['validation_msg']}\n\n"
+            "**Final Step:** Upload your UPI QR code\n"
+            "This will be used to pay you for your sales.\n\n"
+            "📸 Send the QR code image now:",
+            parse_mode='Markdown'
+        )
+    
+    @staticmethod
+    async def finalize_submission(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Finalize submission after UPI QR upload"""
+        user_id = update.effective_user.id
+        
+        # Get validated data from context
+        valid_gmails = context.user_data.get('validated_gmails')
+        batch_id = context.user_data.get('batch_id')
+        validation_msg = context.user_data.get('validation_msg', '')
+        upi_qr_path = context.user_data.get('upi_qr_path')
+        
+        if not all([valid_gmails, batch_id, upi_qr_path]):
+            await update.message.reply_text("❌ Error: Missing information. Please start again.")
+            context.user_data.clear()
+            return
+        
+        # Check if already a seller
+        seller = db.get_seller(user_id)
+        
+        if not seller:
+            # Create seller account with UPI QR
+            success = db.create_seller(user_id, upi_qr_path)
+            if not success:
+                await update.message.reply_text("❌ Error creating seller account. Please try again.")
+                return
+            seller = db.get_seller(user_id)
+        
+        # Add valid Gmails to database
         success = db.add_gmails(seller['seller_id'], valid_gmails, batch_id)
         
         if success:
-            validation_msg = f"\n\n✅ Valid: {len(valid_gmails)}"
-            if invalid_count > 0:
-                validation_msg += f"\n❌ Invalid: {invalid_count} (rejected)"
-            
-            await query.edit_message_text(
+            await update.message.reply_text(
                 "✅ **Submission Successful!**\n\n"
                 f"📧 {len(valid_gmails)} Gmails submitted for approval\n"
                 f"🆔 Batch ID: `{batch_id}`\n"
@@ -202,7 +242,8 @@ class SellerHandler:
             # Notify admins
             await SellerHandler.notify_admins_new_submission(context, user_id, len(valid_gmails), batch_id)
         else:
-            await query.edit_message_text("❌ Error submitting Gmails. Please try again.")
+            await update.message.reply_text("❌ Error submitting Gmails. Please try again.")
+
     
     @staticmethod
     async def notify_admins_new_submission(context: ContextTypes.DEFAULT_TYPE, 

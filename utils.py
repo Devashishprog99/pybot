@@ -42,20 +42,17 @@ def parse_gmail_list(text: str) -> list:
     
     return gmails
 
+
 def check_gmail_credentials(email: str, password: str) -> bool:
-    """Check if Gmail credentials are valid using IMAP"""
-    import imaplib
-    try:
-        # Connect to Gmail IMAP
-        server = imaplib.IMAP4_SSL('imap.gmail.com')
-        # Try to login
-        server.login(email, password)
-        # Logout if successful
-        server.logout()
-        return True
-    except Exception as e:
-        # Login failed
+    """Check if Gmail credentials are valid using format validation
+    Note: IMAP validation disabled because Gmail now requires App Passwords
+    which most sellers won't have. Buyers will verify accounts work."""
+    # Just check format - email must be @gmail.com and password must be reasonable length
+    if not email.lower().endswith('@gmail.com'):
         return False
+    if len(password) < 4:  # Very basic check
+        return False
+    return True
 
 # ==================== FORMATTING ====================
 
