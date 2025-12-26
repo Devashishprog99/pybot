@@ -126,6 +126,12 @@ class PaymentManager:
                 
             payment_session_id = order_response.data.payment_session_id
             
+            # Base URL for payment link
+            if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                pay_base_url = "https://payments.cashfree.com/order"
+            else:
+                pay_base_url = "https://payments-test.cashfree.com/order"
+            
             # 2. Call Pay Order with UPI QR method
             upi_method = UPIPaymentMethod(
                 upi=Upi(
@@ -145,7 +151,7 @@ class PaymentManager:
             except Exception as pay_err:
                 print(f"DEBUG: Direct QR failed (Feature probably not enabled): {pay_err}")
                 # FALLBACK: Return standard session link as QR if seamless is disabled
-                qr_payload = f"https://payments.cashfree.com/order/#{payment_session_id}"
+                qr_payload = f"{pay_base_url}/{payment_session_id}"
                 
                 # Create QR of the checkout link instead
                 qr = qrcode.QRCode(version=1, box_size=10, border=5)
