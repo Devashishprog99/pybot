@@ -106,19 +106,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop('awaiting_support_message', None)
         return
 
-    # User ID detection for admins
-    if admin_handler.is_admin(user_id):
-        # Check if forwarded message or numeric ID
-        target_uid = None
-        if update.message.forward_from:
-            target_uid = update.message.forward_from.id
-        elif text.isdigit() and len(text) > 5:
-            target_uid = int(text)
-            
-        if target_uid:
-            await admin_handler.manage_user(update, context, target_uid)
-            return
-
     # Menu button handlers
     if text == "💰 Wallet":
         await show_wallet(update, context)
@@ -132,6 +119,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(help_message(), parse_mode='Markdown')
     elif text == "⚙️ Admin Panel":
         await admin_handler.show_admin_panel(update, context)
+    
+    # User ID detection for admins (only if not a menu command)
+    elif admin_handler.is_admin(user_id):
+        # Check if forwarded message or numeric ID
+        target_uid = None
+        
+        # Safe attribute check for different library versions
+        fw_from = getattr(update.message, 'forward_from', None)
+        fw_from_user = getattr(update.message, 'forward_from_user', None)
+        
+        if fw_from:
+            target_uid = fw_from.id
+        elif fw_from_user:
+            target_uid = fw_from_user.id
+        elif text.isdigit() and len(text) > 5:
+            target_uid = int(text)
+            
+        if target_uid:
+            await admin_handler.manage_user(update, context, target_uid)
+            return
+            
     else:
         await update.message.reply_text(
             "Please use the buttons below to interact with the bot.",
