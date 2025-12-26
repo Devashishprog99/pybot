@@ -229,6 +229,9 @@ def build_admin_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("📧 Gmails", callback_data="admin_gmails"),
             InlineKeyboardButton("💰 Withdrawals", callback_data="admin_withdrawals")
         ],
+        [
+            InlineKeyboardButton("💸 Pending Payments", callback_data="admin_pending_payments")
+        ],
         [InlineKeyboardButton("📊 Dashboard", callback_data="admin_dashboard")],
         [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]
     ]
