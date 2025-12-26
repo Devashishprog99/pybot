@@ -108,13 +108,6 @@ def build_amount_keyboard() -> InlineKeyboardMarkup:
     ]
     return InlineKeyboardMarkup(keyboard)
 
-def build_payment_method_keyboard(amount: int) -> InlineKeyboardMarkup:
-    """Build keyboard to select payment method"""
-    keyboard = [
-        [InlineKeyboardButton("📱 Direct UPI Request (GPay/PhonePe)", callback_data=f"paymethod_collect_{amount}")],
-        [InlineKeyboardButton("🖼️ QR Code (Link Fallback)", callback_data=f"paymethod_qr_{amount}")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
-    ]
     return InlineKeyboardMarkup(keyboard)
 
 def build_payment_keyboard(payment_link: str, order_id: str) -> InlineKeyboardMarkup:

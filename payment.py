@@ -25,6 +25,58 @@ Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV.upper() == "P
 class PaymentManager:
     
     @staticmethod
+    async def create_payment_order(user_id: int, amount: float) -> dict:
+        """Create a standard Cashfree order and return the bridge link"""
+        try:
+            order_id = generate_order_id()
+            
+            customer = CustomerDetails(
+                customer_id=str(user_id),
+                customer_phone=f"9{str(user_id)[-9:].zfill(9)}"
+            )
+            
+            # 1. Create Order
+            order_request = CreateOrderRequest(
+                order_amount=amount,
+                order_currency="INR",
+                order_id=order_id,
+                customer_details=customer,
+                order_expiry_time=(datetime.utcnow() + timedelta(minutes=16)).strftime('%Y-%m-%dT%H:%M:%SZ')
+            )
+            
+            x_api_version = "2023-08-01"
+            order_response = Cashfree().PGCreateOrder(x_api_version, order_request)
+            
+            if not order_response or not order_response.data:
+                return {'success': False, 'error': 'Failed to create order'}
+                
+            payment_session_id = order_response.data.payment_session_id
+            
+            # Dashboard Bridge Link
+            payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"
+            
+            # Save transaction
+            txn_id = db.create_transaction(
+                user_id=user_id,
+                txn_type='wallet_add',
+                amount=amount,
+                cashfree_order_id=order_id,
+                payment_link=payment_link,
+                description=f"Add {format_currency(amount)} via Direct Pay"
+            )
+            
+            return {
+                'success': True,
+                'order_id': order_id,
+                'payment_link': payment_link,
+                'amount': amount,
+                'txn_id': txn_id
+            }
+        except Exception as e:
+            print(f"DEBUG: create_payment_order failed: {e}")
+            return {'success': False, 'error': str(e)}
+
+    @staticmethod
     async def create_collect_payment(user_id: int, amount: float, upi_id: str) -> dict:
         """Create Cashfree order and send a UPI Collect request (notification)"""
         try:
