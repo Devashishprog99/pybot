@@ -3,7 +3,7 @@ Database operations for Gmail Marketplace Bot
 """
 import sqlite3
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Tuple
 import config
 
@@ -487,10 +487,77 @@ class Database:
             stats['pending_withdrawals'] = row['count']
             
             # Revenue
-            row = conn.execute("SELECT SUM(amount) as total FROM transactions WHERE type = 'purchase' AND status = 'success'").fetchone()
+            row = conn.execute("SELECT SUM(amount) as total FROM transactions WHERE status = 'success'").fetchone()
             stats['total_revenue'] = row['total'] or 0.0
             
+            # Seller pending amount
+            row = conn.execute("SELECT SUM(total_earnings) as total FROM sellers").fetchone()
+            stats['seller_pending_payouts'] = row['total'] or 0.0
+            
             return stats
+        finally:
+            conn.close()
+
+    def get_time_based_analytics(self) -> Dict:
+        """Get daily, weekly, monthly, and yearly transaction analytics (SQLite)"""
+        analytics = {}
+        periods = {
+            'daily': "-1 days",
+            'weekly': "-7 days",
+            'monthly': "-30 days",
+            'yearly': "-365 days"
+        }
+        
+        conn = self.get_connection()
+        try:
+            for label, period in periods.items():
+                row = conn.execute(f'''
+                    SELECT SUM(amount) as total_amount, COUNT(*) as count 
+                    FROM transactions 
+                    WHERE status = 'success' AND created_at >= datetime('now', ?)
+                ''', (period,)).fetchone()
+                
+                analytics[label] = {
+                    "total_amount": row['total_amount'] or 0,
+                    "count": row['count'] or 0
+                }
+            return analytics
+        finally:
+            conn.close()
+
+    def save_support_message(self, user_id: int, message: str) -> bool:
+        """Save support message from user"""
+        conn = self.get_connection()
+        try:
+            conn.execute('''
+                INSERT INTO support_messages (user_id, message, status)
+                VALUES (?, ?, 'unread')
+            ''', (user_id, message))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error saving support message: {e}")
+            return False
+        finally:
+            conn.close()
+
+    def get_support_messages(self, unread_only: bool = True) -> List[Dict]:
+        """Get support messages for admin"""
+        conn = self.get_connection()
+        try:
+            query = "SELECT * FROM support_messages"
+            if unread_only:
+                query += " WHERE status = 'unread'"
+            query += " ORDER BY created_at DESC"
+            
+            rows = conn.execute(query).fetchall()
+            messages = []
+            for row in rows:
+                msg = dict(row)
+                user = self.get_user(msg['user_id'])
+                msg['username'] = user['username'] if user else "Unknown"
+                messages.append(msg)
+            return messages
         finally:
             conn.close()
 
