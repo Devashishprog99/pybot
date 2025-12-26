@@ -75,19 +75,30 @@ class PaymentManager:
             
             pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
             
-            if pay_response and pay_response.data and hasattr(pay_response.data, 'data'):
-                # Extract UPI intent link (e.g., upi://pay?...)
-                # Note: pay_response.data.data might vary based on method. 
-                # For QR, it often returns 'data' which is the payload for QR.
+            # Debug logging
+            print(f"DEBUG: Pay Response: {pay_response}")
+            
+            if pay_response and pay_response.data:
+                # In Cashfree SDK v4, for UPI QR, the link is usually in data.data or data.payload
                 qr_payload = None
-                if hasattr(pay_response.data.data, 'payload'):
-                    qr_payload = pay_response.data.data.payload
-                elif hasattr(pay_response.data.data, 'qr_code'):
-                    qr_payload = pay_response.data.data.qr_code
+                data_obj = pay_response.data
+                
+                # Try all possible locations for the UPI intent / payload
+                if hasattr(data_obj, 'data') and data_obj.data:
+                    if isinstance(data_obj.data, dict):
+                        qr_payload = data_obj.data.get('payload') or data_obj.data.get('qr_code')
+                    else:
+                        qr_payload = getattr(data_obj.data, 'payload', None) or getattr(data_obj.data, 'qr_code', None)
+                
+                if not qr_payload and hasattr(data_obj, 'payload'):
+                    qr_payload = data_obj.payload
                 
                 if not qr_payload:
-                    # Fallback to web link if QR payload not found
-                    qr_payload = f"https://payments.cashfree.com/order/#{payment_session_id}"
+                    # Final fallback: if we can't find the raw payload, we use the payment_link if it exists
+                    qr_payload = getattr(data_obj, 'payment_link', None)
+                    if not qr_payload:
+                        qr_payload = f"https://payments.cashfree.com/order/#{payment_session_id}"
+                        print(f"DEBUG: Using fallback web link for QR: {qr_payload}")
 
                 # 3. Generate QR Image
                 qr = qrcode.QRCode(version=1, box_size=10, border=5)

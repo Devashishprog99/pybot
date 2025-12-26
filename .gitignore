@@ -24,6 +24,7 @@ dist/
 
 # UPI QR Codes (contains sensitive payment info)
 upi_qrs/
+temp_qrs/
 
 # IDE
 .vscode/
