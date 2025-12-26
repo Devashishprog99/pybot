@@ -79,9 +79,12 @@ class PaymentManager:
                     env_tag = config.CASHFREE_ENV.upper()
                     payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 else:
-                    # Priority 3: Fallback to official hashtag format
-                    base = "https://payments.cashfree.com" if config.CASHFREE_ENV.upper() == 'PRODUCTION' else "https://payments-test.cashfree.com"
-                    payment_link = f"{base}/order/#{payment_session_id}"
+                    # Priority 3: Fallback to official hashtag + slash format
+                    if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                        payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                    else:
+                        # Sandbox has a different specific path for the redirect page
+                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
             
             print(f"DEBUG: Generated Payment Link ({config.CASHFREE_ENV}): {payment_link}")
             
@@ -152,8 +155,10 @@ class PaymentManager:
                 # FALLBACK: Use environment-aware bridge
                 env_tag = config.CASHFREE_ENV.upper()
                 if "localhost" in config.DASHBOARD_URL:
-                     env_sub = "cashfree" if env_tag == "PRODUCTION" else "test.cashfree"
-                     payment_link = f"https://payments.{env_sub}.com/order/#{payment_session_id}"
+                     if env_tag == "PRODUCTION":
+                         payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                     else:
+                         payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
                 else:
                      payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 
@@ -218,7 +223,10 @@ class PaymentManager:
             except Exception as pay_err:
                 # FALLBACK: QR of environment-aware Bridge Link
                 env_tag = config.CASHFREE_ENV.upper()
-                qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}" if "localhost" not in config.DASHBOARD_URL else f"https://payments.{'cashfree' if env_tag == 'PRODUCTION' else 'test.cashfree'}.com/order/#{payment_session_id}"
+                qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}" if "localhost" not in config.DASHBOARD_URL else (
+                    f"https://payments.cashfree.com/order/#/{payment_session_id}" if env_tag == "PRODUCTION" else 
+                    f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+                )
                 qr = qrcode.QRCode(version=1, box_size=10, border=5)
                 qr.add_data(qr_payload)
                 qr.make(fit=True)
