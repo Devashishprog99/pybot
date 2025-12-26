@@ -84,6 +84,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode='Markdown'
             )
             return
+        elif text == "❌ Cancel Payment":
+            # Cancel any pending payment
+            if context.user_data.get('pending_payment'):
+                order_id = context.user_data.pop('pending_payment')
+                await payment_manager.cancel_payment(order_id)
+                await update.message.reply_text("✅ Payment cancelled successfully!")
+            else:
+                await update.message.reply_text("ℹ️ No active payment to cancel.")
+            return
         elif text == "⚙️ Admin Panel":
             await admin_handler.show_admin_panel(update, context)
             return
@@ -513,9 +522,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         order_id = data.replace("cancel_payment_", "")
         await payment_manager.cancel_payment(order_id)
         context.user_data.pop('pending_payment', None)
-        await query.edit_message_text(
-            "❌ Payment cancelled.",
-            reply_markup=InlineKeyboardMarkup([[]])  # Empty keyboard
+        
+        # Delete the payment message entirely
+        try:
+            await query.message.delete()
+        except:
+            pass
+        
+        # Send new message
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="✅ Payment cancelled successfully!"
         )
     
     # Buy callbacks

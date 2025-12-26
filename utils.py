@@ -87,7 +87,8 @@ def build_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
     keyboard = [
         ['💰 Wallet', '🛒 Buy Gmails'],
         ['📤 Sell Gmails', '📊 My Activity'],
-        ['ℹ️ Help', '⬅️ Back']
+        ['ℹ️ Help', '⬅️ Back'],
+        ['❌ Cancel Payment']
     ]
     
     if is_admin:
@@ -117,13 +118,8 @@ def build_amount_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("₹500", callback_data="amount_500")
         ],
         [InlineKeyboardButton("✏️ Custom Amount", callback_data="amount_custom")],
-        [
-            InlineKeyboardButton("⬅️ Back", callback_data="wallet_main"),
-            InlineKeyboardButton("❌ Cancel", callback_data="cancel")
-        ]
+        [InlineKeyboardButton("⬅️ Back", callback_data="wallet_main")]
     ]
-    return InlineKeyboardMarkup(keyboard)
-
     return InlineKeyboardMarkup(keyboard)
 
 def build_payment_keyboard(payment_link: str, order_id: str) -> InlineKeyboardMarkup:
@@ -153,10 +149,7 @@ def build_buy_keyboard(available: int) -> InlineKeyboardMarkup:
     
     # Custom quantity and navigation
     keyboard.append([InlineKeyboardButton("✏️ Custom Quantity", callback_data="buy_custom")])
-    keyboard.append([
-        InlineKeyboardButton("⬅️ Back", callback_data="main_menu"),
-        InlineKeyboardButton("❌ Cancel", callback_data="cancel")
-    ])
+    keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="main_menu")])
     
     return InlineKeyboardMarkup(keyboard)
 
