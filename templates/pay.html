@@ -8,7 +8,7 @@
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -18,16 +18,17 @@
             background: #0f172a;
             color: white;
             text-align: center;
+            padding: 20px;
         }
 
         .loader {
             border: 4px solid rgba(255, 255, 255, 0.1);
             border-left-color: #3b82f6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         @keyframes spin {
@@ -37,46 +38,110 @@
         }
 
         .message {
-            font-size: 1.1rem;
-            opacity: 0.8;
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .sub-message {
+            font-size: 0.9rem;
+            opacity: 0.6;
+            max-width: 300px;
+        }
+
+        #error-container {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 24px;
+            max-width: 400px;
         }
 
         #error-msg {
-            color: #ef4444;
-            margin-top: 20px;
-            display: none;
+            color: #f87171;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #2563eb;
+        }
+
+        .debug-info {
+            font-family: monospace;
+            font-size: 0.7rem;
+            margin-top: 40px;
+            opacity: 0.3;
         }
     </style>
 </head>
 
 <body>
-    <div class="loader"></div>
-    <div class="message">Connecting to secure gateway...</div>
-    <div id="error-msg"></div>
+    <div id="loading-ui">
+        <div class="loader"></div>
+        <div class="message">Securing your connection...</div>
+        <div class="sub-message">Redirecting to Cashfree secure payment gateway</div>
+    </div>
+
+    <div id="error-container">
+        <div id="error-msg">Payment session could not be initialized.</div>
+        <div class="sub-message" style="margin-bottom: 20px;">
+            This usually happens if the payment link has expired or the environment (TEST/PROD) is mismatched.
+        </div>
+        <a href="javascript:location.reload()" class="btn">🔄 Try Again</a>
+    </div>
+
+    <div class="debug-info">
+        Env: {{ env | upper }} | Session: {{ session_id[:8] }}...
+    </div>
 
     <script>
-        const cashfree = Cashfree({
-            mode: "{{ env }}" === "production" ? "production" : "sandbox"
-        });
+        const envMode = "{{ env }}".toLowerCase() === "production" ? "production" : "sandbox";
 
-        const checkoutOptions = {
-            paymentSessionId: "{{ session_id }}",
-            redirectTarget: "_self",
-        };
-
-        // Automatically trigger checkout
         try {
-            cashfree.checkout(checkoutOptions).then((result) => {
-                if (result.error) {
-                    document.getElementById('error-msg').innerText = "Error: " + result.error.message;
-                    document.getElementById('error-msg').style.display = 'block';
-                    console.error("Checkout Error:", result.error);
-                }
+            const cashfree = Cashfree({
+                mode: envMode
             });
+
+            const checkoutOptions = {
+                paymentSessionId: "{{ session_id }}",
+                redirectTarget: "_self",
+            };
+
+            // Delay execution slightly to ensure SDK is fully ready
+            setTimeout(() => {
+                cashfree.checkout(checkoutOptions).then((result) => {
+                    if (result.error) {
+                        showError(result.error.message);
+                    }
+                }).catch(err => {
+                    showError("Checkout failed to launch.");
+                });
+            }, 500);
+
         } catch (e) {
-            document.getElementById('error-msg').innerText = "Something went wrong. Please try again.";
-            document.getElementById('error-msg').style.display = 'block';
-            console.error("SDK Error:", e);
+            showError("Could not connect to Payment Provider.");
+            console.error(e);
+        }
+
+        function showError(msg) {
+            document.getElementById('loading-ui').style.display = 'none';
+            document.getElementById('error-container').style.display = 'block';
+            document.getElementById('error-msg').innerText = msg;
         }
     </script>
 </body>

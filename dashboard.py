@@ -59,8 +59,9 @@ def dashboard():
 @app.route('/pay/<session_id>')
 def pay(session_id):
     """Bridge for Cashfree payment - opens checkout via SDK"""
-    env = config.CASHFREE_ENV.lower()
-    return render_template('pay.html', session_id=session_id, env=env)
+    env = config.CASHFREE_ENV.upper()
+    print(f"DEBUG: Payment Bridge accessed. Session: {session_id[:10]}... Mode: {env}")
+    return render_template('pay.html', session_id=session_id, env=env.lower())
 
 @app.route('/api/analytics')
 @admin_required
