@@ -27,17 +27,18 @@ Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV.upper() == "P
 
 # Global to store last API response for diagnostic /logs command
 LAST_API_RESPONSE = "No API calls made yet."
+LAST_GENERATED_LINK = "None"
 
 class PaymentManager:
     
     @staticmethod
     def get_last_response():
-        return LAST_API_RESPONSE
+        return f"{LAST_API_RESPONSE}\n\nGenerated Link: {LAST_GENERATED_LINK}"
 
     @staticmethod
     async def create_payment_order(user_id: int, amount: float) -> dict:
         """Create a standard Cashfree order and return the bridge link"""
-        global LAST_API_RESPONSE
+        global LAST_API_RESPONSE, LAST_GENERATED_LINK
         try:
             order_id = generate_order_id()
             
@@ -91,13 +92,14 @@ class PaymentManager:
                     env_tag = config.CASHFREE_ENV.upper()
                     payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 else:
-                    # Priority 3: Fallback to official hashtag + slash format
+                    # Priority 3: Fallback to verified hashtag format (NO SLASH after #)
                     if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                        payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                        payment_link = f"https://payments.cashfree.com/order/#{payment_session_id}"
                     else:
-                        # Sandbox has a different specific path for the redirect page
-                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+                        # Sandbox has a specific path for the redirect page
+                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#{payment_session_id}"
             
+            LAST_GENERATED_LINK = payment_link
             print(f"DEBUG: Generated Payment Link ({config.CASHFREE_ENV}): {payment_link}")
             
             # Save transaction
@@ -168,9 +170,9 @@ class PaymentManager:
                 env_tag = config.CASHFREE_ENV.upper()
                 if "localhost" in config.DASHBOARD_URL:
                      if env_tag == "PRODUCTION":
-                         payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                         payment_link = f"https://payments.cashfree.com/order/#{payment_session_id}"
                      else:
-                         payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+                         payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#{payment_session_id}"
                 else:
                      payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 
@@ -236,8 +238,8 @@ class PaymentManager:
                 # FALLBACK: QR of environment-aware Bridge Link
                 env_tag = config.CASHFREE_ENV.upper()
                 qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}" if "localhost" not in config.DASHBOARD_URL else (
-                    f"https://payments.cashfree.com/order/#/{payment_session_id}" if env_tag == "PRODUCTION" else 
-                    f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+                    f"https://payments.cashfree.com/order/#{payment_session_id}" if env_tag == "PRODUCTION" else 
+                    f"https://sandbox.cashfree.com/pg/checkout/order/#{payment_session_id}"
                 )
                 qr = qrcode.QRCode(version=1, box_size=10, border=5)
                 qr.add_data(qr_payload)
