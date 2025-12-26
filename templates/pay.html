@@ -110,9 +110,34 @@
         session_id[:12] }}...
     </div>
 
+    <div id="upi-container" style="display: none; margin-top: 20px;">
+        <div class="sub-message">Prefer your own UPI App?</div>
+        <!-- This button breaks out of the webview to the system browser to allow deep linking -->
+        <a id="upi-btn" href="#" class="btn" style="background: #10b981;">📱 Open Payment App</a>
+        <div style="font-size: 0.8rem; margin-top: 8px; opacity: 0.5;">(GPay, PhonePe, Paytm, etc.)</div>
+    </div>
+
     <script>
         const envMode = "{{ env }}".toLowerCase() === "production" ? "production" : "sandbox";
         const sessionId = "{{ session_id }}".trim();
+
+        // Mobile detection
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            document.getElementById('upi-container').style.display = 'block';
+            // Set the button to open the current URL in system browser
+            // Cashfree's page handles the actual UPI intent triggering better in Chrome/Safari
+            document.getElementById('upi-btn').onclick = function (e) {
+                e.preventDefault();
+                // Telegram WebApp method to open link in external browser
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.openLink(window.location.href);
+                } else {
+                    window.open(window.location.href, '_system');
+                }
+            };
+        }
 
         console.log(`Initializing Cashfree in ${envMode} mode for session ${sessionId.substring(0, 8)}...`);
 
