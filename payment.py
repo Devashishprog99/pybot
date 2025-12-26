@@ -54,9 +54,9 @@ class PaymentManager:
             
             # Base URL for payment link
             if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                pay_base_url = "https://payments.cashfree.com/check-out"
+                pay_base_url = "https://payments.cashfree.com/order"
             else:
-                pay_base_url = "https://payments-test.cashfree.com/check-out"
+                pay_base_url = "https://payments-test.cashfree.com/order"
             
             # 2. Call Pay Order with UPI COLLECT method
             upi_method = UPIPaymentMethod(
@@ -152,9 +152,9 @@ class PaymentManager:
             
             # Base URL for payment link
             if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                pay_base_url = "https://payments.cashfree.com/check-out"
+                pay_base_url = "https://payments.cashfree.com/order"
             else:
-                pay_base_url = "https://payments-test.cashfree.com/check-out"
+                pay_base_url = "https://payments-test.cashfree.com/order"
             
             # 2. Call Pay Order with UPI QR method
             upi_method = UPIPaymentMethod(
