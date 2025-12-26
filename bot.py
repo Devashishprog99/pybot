@@ -83,7 +83,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_upi_id(update, context)
         return
 
-    elif context.user_data.get('awaiting_support_message'):
+    # Support message (moved check to before menu handlers)
+    if context.user_data.get('awaiting_support_message'):
         # Customer support message
         user_id = update.effective_user.id
         message = update.message.text
@@ -104,7 +105,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Failed to send message. Please try again.")
         context.user_data.pop('awaiting_support_message', None)
         return
-    
+
+    # User ID detection for admins
+    if admin_handler.is_admin(user_id):
+        # Check if forwarded message or numeric ID
+        target_uid = None
+        if update.message.forward_from:
+            target_uid = update.message.forward_from.id
+        elif text.isdigit() and len(text) > 5:
+            target_uid = int(text)
+            
+        if target_uid:
+            await admin_handler.manage_user(update, context, target_uid)
+            return
+
     # Menu button handlers
     if text == "💰 Wallet":
         await show_wallet(update, context)
@@ -488,6 +502,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("reject_batch_"):
         batch_id = data.replace("reject_batch_", "")
         await admin_handler.reject_gmail_batch(update, context, batch_id)
+    elif data == "admin_users":
+        await admin_handler.show_users(update, context)
+    elif data.startswith("ban_"):
+        user_id = int(data.split('_')[1])
+        await admin_handler.toggle_ban(update, context, user_id, True)
+    elif data.startswith("unban_"):
+        user_id = int(data.split('_')[1])
+        await admin_handler.toggle_ban(update, context, user_id, False)
     elif data.startswith("approve_withdrawal_"):
         withdrawal_id = int(data.split('_')[2])
         await admin_handler.approve_withdrawal(update, context, withdrawal_id)

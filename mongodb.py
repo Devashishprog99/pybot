@@ -63,6 +63,10 @@ class MongoDatabase:
         """Get user by ID"""
         return self.users.find_one({"user_id": user_id})
     
+    def get_all_users(self) -> List[Dict]:
+        """Get all users"""
+        return list(self.users.find({}).sort("created_at", -1))
+    
     def update_wallet(self, user_id: int, amount: float) -> bool:
         """Update user wallet balance"""
         try:

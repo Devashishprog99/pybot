@@ -408,4 +408,87 @@ class AdminHandler:
         
         await AdminHandler.show_pending_withdrawals(update, context)
 
+    @staticmethod
+    async def show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show all registered users"""
+        query = update.callback_query
+        await query.answer()
+        
+        users = db.get_all_users()
+        
+        if not users:
+            await query.edit_message_text(
+                "👥 **No users found!**",
+                reply_markup=build_admin_nav_keyboard("users"),
+                parse_mode='Markdown'
+            )
+            return
+            
+        message = f"👥 **Total Users: {len(users)}**\n\n"
+        
+        # Show last 15 users to avoid message length limits
+        for user in users[:15]:
+            status = "🚫 Banned" if user.get('is_banned') else "✅ Active"
+            is_seller_data = db.get_seller(user['user_id'])
+            is_seller = "👨‍💼 Seller" if is_seller_data else "👤 Buyer"
+            message += (
+                f"👤 `{user['user_id']}` | @{user.get('username', 'No Username')}\n"
+                f"💰 Balance: {format_currency(user.get('wallet_balance', 0))}\n"
+                f"🎫 Status: {status} | {is_seller}\n\n"
+            )
+            
+        if len(users) > 15:
+            message += f"_... and {len(users) - 15} more users._"
+            
+        message += "\nTo manage a specific user, just forward a message from them or send their User ID."
+        
+        await query.edit_message_text(
+            message,
+            reply_markup=build_admin_nav_keyboard("users"),
+            parse_mode='Markdown'
+        )
+
+    @staticmethod
+    async def manage_user(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
+        """Manage a specific user"""
+        user = db.get_user(user_id)
+        if not user:
+            await update.message.reply_text("❌ User not found.")
+            return
+            
+        is_banned = user.get('is_banned', False)
+        status = "🚫 BANNED" if is_banned else "✅ ACTIVE"
+        
+        message = (
+            f"👤 **User Management**\n\n"
+            f"ID: `{user['user_id']}`\n"
+            f"Username: @{user.get('username', 'None')}\n"
+            f"Name: {user.get('full_name', 'None')}\n"
+            f"Balance: {format_currency(user.get('wallet_balance', 0))}\n"
+            f"Status: {status}\n"
+            f"Joined: {format_datetime(user.get('created_at'))}"
+        )
+        
+        await update.message.reply_text(
+            message,
+            reply_markup=build_user_action_keyboard(user_id, is_banned),
+            parse_mode='Markdown'
+        )
+
+    @staticmethod
+    async def toggle_ban(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int, ban: bool):
+        """Ban or unban a user"""
+        query = update.callback_query
+        await query.answer("Processing...")
+        
+        if db.ban_user(user_id, ban):
+            action = "banned" if ban else "unbanned"
+            await query.edit_message_text(
+                text=f"✅ User `{user_id}` has been **{action}**.",
+                parse_mode='Markdown',
+                reply_markup=build_admin_nav_keyboard("users")
+            )
+        else:
+            await query.answer("❌ Failed to update user status.")
+
 admin_handler = AdminHandler()
