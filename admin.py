@@ -1,4 +1,3 @@
-```
 """
 Admin Module - Admin panel and operations
 """
