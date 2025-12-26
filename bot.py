@@ -208,7 +208,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         f"Order ID: `{order_id}`\n\n"
         f"👇 **Choose how to pay:**\n"
         f"• **Inside App**: Opens directly in Telegram.\n"
-        f"• **Browser**: Opens in Chrome/Safari (Better for some UPI apps)."
+        f"• **Pay via App**: Opens browser to auto-trigger UPI apps (GPay/PhonePe)."
     )
     
     try:
@@ -223,7 +223,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
 
         keyboard = [
             [InlineKeyboardButton(f"📱 Pay {format_currency(amount)} Inside App", web_app=WebAppInfo(url=payment_link))],
-            [InlineKeyboardButton("🌐 Pay in Browser", url=payment_link)],
+            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=payment_link)],
             [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
         ]
         
