@@ -155,14 +155,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle photo uploads"""
-    if context.user_data.get('seller_step') == 1:
-        # UPI QR for seller registration (old flow, deprecated)
-        await seller_handler.handle_upi_qr(update, context)
-    elif context.user_data.get('seller_step') == 3:
+    if context.user_data.get('seller_step') == 3:
         # UPI QR for new seller flow (after Gmail validation)
-        await seller_handler.handle_upi_qr(update, context)
+        user_id = update.effective_user.id
+        
+        if not update.message.photo:
+            await update.message.reply_text("❌ Please send a valid QR code image.")
+            return
+        
+        # Download and save QR code
+        photo = update.message.photo[-1]  # Get highest resolution
+        file = await context.bot.get_file(photo.file_id)
+        
+        # Create directory if not exists
+        os.makedirs('upi_qrs', exist_ok=True)
+        file_path = f"upi_qrs/seller_{user_id}_{photo.file_id}.jpg"
+        await file.download_to_drive(file_path)
+        
+        # Save to context
+        context.user_data['upi_qr_path'] = file_path
+        
         # Then finalize the submission
         await seller_handler.finalize_submission(update, context)
+        
+    elif context.user_data.get('seller_step') == 1:
+        # UPI QR for seller registration (old flow, deprecated)
+        await seller_handler.handle_upi_qr(update, context)
     elif context.user_data.get('withdrawal_step'):
         # UPI QR for withdrawal
         await seller_handler.submit_withdrawal(update, context)
