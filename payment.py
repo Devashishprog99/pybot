@@ -57,7 +57,9 @@ class PaymentManager:
             if dash_url and not dash_url.startswith('http'):
                 dash_url = f"https://{dash_url}"
             
-            return_url = f"{dash_url}/" if dash_url else "https://t.me/BotFather"
+            # CRITICAL FIX: Redirect back to the BOT, not the Dashboard/Admin Panel
+            # return_url = f"{dash_url}/" if dash_url else "https://t.me/BotFather"
+            return_url = f"https://t.me/{config.BOT_USERNAME}"
             
             order_meta = OrderMeta(
                 return_url=return_url

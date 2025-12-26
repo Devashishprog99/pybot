@@ -9,6 +9,7 @@ load_dotenv()
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+BOT_USERNAME = "DEVGMAILBOT"  # User provided: @DEVGMAILBOT
 ADMIN_IDS = [int(uid.strip()) for uid in os.getenv('ADMIN_IDS', '').split(',') if uid.strip()]
 
 # Cashfree Configuration
