@@ -1,0 +1,10 @@
+﻿python-telegram-bot==20.7
+python-dotenv==1.0.0
+cashfree-pg==4.3.0
+aiohttp==3.9.1
+Pillow==10.1.0
+pymongo==4.6.1
+flask==3.0.0
+flask-cors==4.0.0
+gunicorn==21.2.0
+qrcode==7.4.2

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMAIL MARKETPLACE - ADMIN DASHBOARD</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --secondary: #ec4899;
+            --accent: #10b981;
+            --bg: #0b0f1a;
+            --card: #161c2d;
+            --sidebar: #111827;
+            --text-main: #f3f4f6;
+            --text-dim: #9ca3af;
+            --border: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3rem;
+        }
+
+        .nav-item {
+            padding: 1rem;
+            border-radius: 0.8rem;
+            cursor: pointer;
+            color: var(--text-dim);
+            transition: all 0.3s;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--primary);
+        }
+
+        .logout {
+            margin-top: auto;
+            color: #ef4444;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            padding: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Charts */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .chart-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 1.2rem;
+            height: 400px;
+        }
+
+        /* Table */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .table-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 1.2rem;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.2rem;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent);
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="logo">G-MARKET ADMIN</div>
+        <div class="nav-item active" onclick="showSection('dashboard', this)">📊 Dashboard</div>
+        <div class="nav-item" onclick="showSection('users', this)">👥 All Users</div>
+        <div class="nav-item" onclick="showSection('sellers', this)">📤 Sellers & Payouts</div>
+        <div class="nav-item" onclick="showSection('gmails', this)">📧 Inventory</div>
+        <div class="nav-item" onclick="showSection('transactions', this)">💰 All Payments</div>
+        <div class="nav-item" onclick="showSection('support', this)">✉️ Support Desk</div>
+        <a href="/logout" class="nav-item logout">🚪 Logout</a>
+    </div>
+
+    <div class="main">
+        <div class="header">
+            <div class="title" id="page-title">Operational Dashboard</div>
+            <div class="user-id">Admin ID: {{ session['admin_id'] }}</div>
+        </div>
+
+        <!-- DASHBOARD SECTION -->
+        <div id="dashboard" class="section active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Total Revenue</span>
+                    <span class="stat-value">₹{{ stats.total_revenue }}</span>
+                    <span class="stat-trend" style="color: var(--accent)">↑ Total Volume</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Pending Payouts</span>
+                    <span class="stat-value">₹{{ stats.seller_pending_payouts }}</span>
+                    <span class="stat-trend" style="color: #f59e0b">● Unpaid Sellers</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Available Gmails</span>
+                    <span class="stat-value">{{ stats.available_gmails }}</span>
+                    <span class="stat-trend" style="color: var(--primary)">● In Stock</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Total Users</span>
+                    <span class="stat-value">{{ stats.total_users }}</span>
+                    <span class="stat-trend" style="color: var(--text-dim)">● Registered</span>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="chart-container">
+                    <h3>Transaction Volume</h3>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Quick Stats (Period)</h3>
+                    <div style="margin-top: 1rem;">
+                        <p><strong>Today:</strong> ₹{{ analytics.daily.total_amount|default(0) }} ({{
+                            analytics.daily.count|default(0) }} txns)</p>
+                        <hr style="margin: 10px 0; opacity: 0.1">
+                        <p><strong>This Week:</strong> ₹{{ analytics.weekly.total_amount|default(0) }} ({{
+                            analytics.weekly.count|default(0) }} txns)</p>
+                        <hr style="margin: 10px 0; opacity: 0.1">
+                        <p><strong>This Month:</strong> ₹{{ analytics.monthly.total_amount|default(0) }} ({{
+                            analytics.monthly.count|default(0) }} txns)</p>
+                        <hr style="margin: 10px 0; opacity: 0.1">
+                        <p><strong>Yearly:</strong> ₹{{ analytics.yearly.total_amount|default(0) }} ({{
+                            analytics.yearly.count|default(0) }} txns)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- USERS SECTION -->
+        <div id="users" class="section">
+            <div class="table-container">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Role</th>
+                            <th>Wallet</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SELLERS SECTION -->
+        <div id="sellers" class="section">
+            <div class="table-container">
+                <table id="sellers-table">
+                    <thead>
+                        <tr>
+                            <th>Seller ID</th>
+                            <th>Username</th>
+                            <th>Total Earnings</th>
+                            <th>Pending Gmails</th>
+                            <th>Sold</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TRANSACTIONS SECTION -->
+        <div id="transactions" class="section">
+            <div class="table-container">
+                <table id="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Txn ID</th>
+                            <th>User ID</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SUPPORT SECTION -->
+        <div id="support" class="section">
+            <div class="table-container">
+                <table id="support-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User ID</th>
+                            <th>Username</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSection(id, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            el.classList.add('active');
+            document.getElementById('page-title').innerText = el.innerText.split(' ').slice(1).join(' ');
+
+            if (id === 'users') loadUsers();
+            if (id === 'sellers') loadSellers();
+            if (id === 'transactions') loadTransactions();
+            if (id === 'support') loadSupport();
+        }
+
+        async function loadUsers() {
+            const resp = await fetch('/api/users');
+            const data = await resp.json();
+            const tbody = document.querySelector('#users-table tbody');
+            tbody.innerHTML = data.map(u => `
+                <tr>
+                    <td><code>${u.user_id}</code></td>
+                    <td>${u.username}</td>
+                    <td>${u.full_name}</td>
+                    <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: var(--primary)">${u.role}</span></td>
+                    <td>₹${u.wallet_balance}</td>
+                    <td>${u.is_banned ? '❌ Banned' : '✅ Active'}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSellers() {
+            const resp = await fetch('/api/sellers');
+            const data = await resp.json();
+            const tbody = document.querySelector('#sellers-table tbody');
+            tbody.innerHTML = data.map(s => `
+                <tr>
+                    <td><code>${s._id || s.seller_id}</code></td>
+                    <td>${s.username}</td>
+                    <td>₹${s.total_earnings}</td>
+                    <td>${s.pending_gmails}</td>
+                    <td>${s.sold_gmails}</td>
+                    <td><span class="badge ${s.status === 'approved' ? 'badge-success' : 'badge-pending'}">${s.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadTransactions() {
+            const resp = await fetch('/api/transactions');
+            const data = await resp.json();
+            const tbody = document.querySelector('#transactions-table tbody');
+            tbody.innerHTML = data.map(t => `
+                <tr>
+                    <td><code>${t._id}</code></td>
+                    <td><code>${t.user_id}</code></td>
+                    <td>₹${t.amount}</td>
+                    <td>${t.type}</td>
+                    <td><span class="badge ${t.status === 'success' ? 'badge-success' : 'badge-pending'}">${t.status}</span></td>
+                    <td>${new Date(t.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSupport() {
+            const resp = await fetch('/api/support');
+            const data = await resp.json();
+            const tbody = document.querySelector('#support-table tbody');
+            tbody.innerHTML = data.map(m => `
+                <tr>
+                    <td>${new Date(m.created_at).toLocaleString()}</td>
+                    <td><code>${m.user_id}</code></td>
+                    <td>${m.username}</td>
+                    <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">${m.message}</td>
+                    <td><span class="badge badge-pending">${m.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // Initialize Revenue Chart
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Yearly', 'Monthly', 'Weekly', 'Daily'],
+                datasets: [{
+                    label: 'Transaction Vol (₹)',
+                    data: [
+                        Number("{{ analytics.yearly.total_amount|default(0) }}"),
+                        Number("{{ analytics.monthly.total_amount|default(0) }}"),
+                        Number("{{ analytics.weekly.total_amount|default(0) }}"),
+                        Number("{{ analytics.daily.total_amount|default(0) }}")
+                    ],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    </script>
+</body>
+
+</html>
