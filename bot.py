@@ -470,6 +470,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle all callback queries"""
     query = update.callback_query
     data = query.data
+    user_id = query.from_user.id
     
     # Wallet callbacks
     if data == "wallet_add":
