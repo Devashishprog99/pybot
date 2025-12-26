@@ -580,19 +580,27 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Global Navigation
     elif data == "cancel":
         # Reset all states
-        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity']:
+        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity', 'pending_payment']:
             context.user_data.pop(key, None)
+        
+        # Show welcome message with main menu
         await query.edit_message_text(
-            "❌ Action cancelled. Returning to main menu...",
-            reply_markup=build_main_menu(admin_handler.is_admin(user_id))
+            welcome_message(),
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
+            parse_mode='Markdown'
         )
-        await start(update, context) # Call start to show welcome
 
-    elif data == "main_menu" or data == "cancel":
+    elif data == "main_menu":
         # Clean state
         for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message']:
             context.user_data.pop(key, None)
-        await start(update, context)
+        
+        # Show welcome message with main menu
+        await query.edit_message_text(
+            welcome_message(),
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
+            parse_mode='Markdown'
+        )
 
     elif data == "wallet_main":
         await show_wallet(update, context)
