@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broadcast - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --bg: #0b0f1a;
+            --card: #161c2d;
+            --text: #f3f4f6;
+            --dim: #9ca3af;
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            color: var(--dim);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .broadcast-card {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 600px;
+        }
+
+        .info {
+            background: rgba(139, 92, 246, 0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-text {
+            color: var(--dim);
+            font-size: 0.9rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: var(--text);
+            padding: 1rem;
+            min-height: 150px;
+            font-family: inherit;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .result.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            display: block;
+        }
+
+        .result.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            display: block;
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: var(--dim);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>📢 Broadcast Message</h1>
+        <nav class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/admin/users">Users</a>
+            <a href="/admin/broadcast" class="active">Broadcast</a>
+            <a href="/admin/sellers">Sellers</a>
+            <a href="/admin/inventory">Inventory</a>
+            <a href="/admin/payments">Payments</a>
+            <a href="/admin/support">Support</a>
+            <a href="/logout">Logout</a>
+        </nav>
+    </div>
+
+    <div class="broadcast-card">
+        <div class="info">
+            <div class="info-title">📊 Target Audience</div>
+            <div class="info-text">This message will be sent to <strong>{{ user_count }}</strong> users via Telegram.
+            </div>
+        </div>
+
+        <form id="broadcastForm">
+            <label for="message">Message Content</label>
+            <textarea id="message" placeholder="Type your broadcast message here...
+
+You can use Markdown formatting:
+*bold* | _italic_ | `code`"></textarea>
+            <p class="hint">Supports Markdown formatting. Message will be sent to all registered bot users.</p>
+
+            <button type="submit" class="btn btn-primary" id="sendBtn">📤 Send Broadcast</button>
+        </form>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('broadcastForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('sendBtn');
+            const result = document.getElementById('result');
+            const message = document.getElementById('message').value.trim();
+
+            if (!message) {
+                result.className = 'result error';
+                result.textContent = 'Please enter a message';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            result.className = 'result';
+            result.style.display = 'none';
+
+            try {
+                const res = await fetch('/admin/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    result.className = 'result success';
+                    result.textContent = '✅ ' + data.message;
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ Error: ' + data.error;
+                }
+            } catch (err) {
+                result.className = 'result error';
+                result.textContent = '❌ Failed to send broadcast';
+            }
+
+            btn.disabled = false;
+            btn.textContent = '📤 Send Broadcast';
+        });
+    </script>
+</body>
+
+</html>

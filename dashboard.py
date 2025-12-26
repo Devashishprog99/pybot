@@ -60,6 +60,65 @@ def dashboard():
 
 # ==================== ADMIN MANAGEMENT ROUTES ====================
 
+@app.route('/admin/users')
+@admin_required
+def admin_users():
+    """View all users"""
+    try:
+        users = db.get_all_users()
+        return render_template('admin_users.html', users=users)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading users</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/broadcast', methods=['GET', 'POST'])
+@admin_required
+def admin_broadcast():
+    """Send broadcast message to all users"""
+    if request.method == 'GET':
+        users = db.get_all_users()
+        return render_template('admin_broadcast.html', user_count=len(users))
+    
+    # POST - Send broadcast
+    try:
+        import requests
+        data = request.get_json()
+        message = data.get('message', '')
+        
+        if not message:
+            return jsonify({'success': False, 'error': 'Message is required'}), 400
+        
+        users = db.get_all_users()
+        sent = 0
+        failed = 0
+        
+        # Send via Telegram Bot API
+        bot_token = config.TELEGRAM_BOT_TOKEN
+        for user in users:
+            try:
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                payload = {
+                    'chat_id': user['user_id'],
+                    'text': message,
+                    'parse_mode': 'Markdown'
+                }
+                resp = requests.post(url, json=payload, timeout=5)
+                if resp.status_code == 200:
+                    sent += 1
+                else:
+                    failed += 1
+            except:
+                failed += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Broadcast sent! {sent} delivered, {failed} failed',
+            'sent': sent,
+            'failed': failed
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/admin/sellers')
 @admin_required
 def admin_sellers():
