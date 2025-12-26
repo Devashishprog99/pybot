@@ -68,6 +68,29 @@ CREATE TABLE IF NOT EXISTS withdrawals (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
+-- Support Messages Table
+CREATE TABLE IF NOT EXISTS support_messages (
+    message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- Support Tickets Table
+CREATE TABLE IF NOT EXISTS support_tickets (
+    ticket_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    status TEXT DEFAULT 'open',  -- open, resolved, closed
+    admin_reply TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_gmails_status ON gmails(status);
 CREATE INDEX IF NOT EXISTS idx_gmails_seller ON gmails(seller_id);
@@ -76,3 +99,5 @@ CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 CREATE INDEX IF NOT EXISTS idx_sellers_status ON sellers(status);
 CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON withdrawals(status);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id);
