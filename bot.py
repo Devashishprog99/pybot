@@ -79,20 +79,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await buyer_handler.process_custom_quantity(update, context)
         return
 
-    elif text == "/check" and admin_handler.is_admin(user_id):
-        # Configuration health check
-        dash_status = "✅ Configured" if config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL else "⚠️ NOT SET (using fallbacks)"
-        
-        message = (
-            "⚙️ **System Configuration Check**\n\n"
-            f"Mode: `{config.CASHFREE_ENV}`\n"
-            f"Dashboard URL: `{dash_status}`\n"
-            f"Admin ID: `{user_id}`\n\n"
-            f"If Dashboard URL is NOT SET, the bot will use direct Cashfree links instead of the bridge."
-        )
-        await update.message.reply_text(message, parse_mode='Markdown')
-        return
-
     # Support message check
     if context.user_data.get('awaiting_support_message'):
         message = update.message.text
@@ -518,6 +504,35 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ==================== MAIN ====================
 
+async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Diagnostic command for admins"""
+    user_id = update.effective_user.id
+    if not admin_handler.is_admin(user_id):
+        return
+        
+    dash_url = config.DASHBOARD_URL or "Not Set"
+    use_bridge = "ENABLED" if config.USE_PAYMENT_BRIDGE else "DISABLED (Using Direct Links)"
+    
+    # Masked keys for safety
+    app_id = config.CASHFREE_APP_ID
+    masked_id = f"{app_id[:4]}...{app_id[-4:]}" if len(app_id) > 4 else "NOT SET"
+    
+    # Check for empty keys
+    status = "✅ OK"
+    if not config.CASHFREE_APP_ID or not config.CASHFREE_SECRET_KEY:
+        status = "❌ KEYS MISSING"
+        
+    message = (
+        "⚙️ **System Configuration Check**\n\n"
+        f"📋 Status: `{status}`\n"
+        f"🏁 **Mode**: `{config.CASHFREE_ENV}`\n"
+        f"🆔 **App ID**: `{masked_id}`\n"
+        f"🌐 **Dashboard**: `{dash_url}`\n"
+        f"🌉 **Bridge**: `{use_bridge}`\n\n"
+        "💡 *Tip: If you get 'Session Invalid', ensure your App ID and Secret match your Mode (Test Keys for TEST, Prod Keys for PRODUCTION).* "
+    )
+    await update.message.reply_text(message, parse_mode='Markdown')
+
 def main():
     """Start the bot"""
     try:
@@ -529,6 +544,8 @@ def main():
         
         # Add handlers
         app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("check", check_command))
+        app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(help_message(), parse_mode='Markdown')))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
         app.add_handler(CallbackQueryHandler(handle_callback))
