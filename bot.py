@@ -48,10 +48,44 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle text messages"""
-    text = update.message.text
     user_id = update.effective_user.id
+    text = update.message.text
     
-    # Check user context for active flows
+    # Check if it's a menu button press - these should ALWAYS work, interrupting any flow
+    menu_buttons = ["💰 Wallet", "🛒 Buy Gmails", "📤 Sell Gmails", "📊 My Activity", "ℹ️ Help", "⬅️ Back", "⚙️ Admin Panel"]
+    if text in menu_buttons:
+        # Clear all pending states
+        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity', 'pending_payment']:
+            context.user_data.pop(key, None)
+        
+        # Handle the menu button
+        if text == "💰 Wallet":
+            await show_wallet(update, context)
+            return
+        elif text == "🛒 Buy Gmails":
+            await buyer_handler.show_buy_menu(update, context)
+            return
+        elif text == "📤 Sell Gmails":
+            await seller_handler.start_selling(update, context)
+            return
+        elif text == "📊 My Activity":
+            await show_my_activity(update, context)
+            return
+        elif text == "ℹ️ Help":
+            await update.message.reply_text(help_message(), parse_mode='Markdown')
+            return
+        elif text == "⬅️ Back":
+            await update.message.reply_text(
+                welcome_message(),
+                reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
+                parse_mode='Markdown'
+            )
+            return
+        elif text == "⚙️ Admin Panel":
+            await admin_handler.show_admin_panel(update, context)
+            return
+    
+    # Now handle awaiting states (only if NOT a menu button)
     if context.user_data.get('seller_step') == 1:
         # Waiting for UPI QR
         await update.message.reply_text("Please upload the UPI QR code image, not text.")
@@ -89,26 +123,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Failed to send message. Please try again.")
         context.user_data.pop('awaiting_support_message', None)
         return
-
-    # Menu button handlers
-    if text == "💰 Wallet":
-        await show_wallet(update, context)
-    elif text == "🛒 Buy Gmails":
-        await buyer_handler.show_buy_menu(update, context)
-    elif text == "📤 Sell Gmails":
-        await seller_handler.start_selling(update, context)
-    elif text == "📊 My Activity":
-        await show_my_activity(update, context)
-    elif text == "ℹ️ Help":
-        await update.message.reply_text(help_message(), parse_mode='Markdown')
-    elif text == "⬅️ Back":
-        await update.message.reply_text(
-            welcome_message(),
-            reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
-            parse_mode='Markdown'
-        )
-    elif text == "⚙️ Admin Panel":
-        await admin_handler.show_admin_panel(update, context)
 
     # User ID detection for admins
     elif admin_handler.is_admin(user_id):
