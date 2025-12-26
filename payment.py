@@ -52,6 +52,12 @@ class PaymentManager:
                 
             payment_session_id = order_response.data.payment_session_id
             
+            # Base URL for payment link
+            if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                pay_base_url = "https://payments.cashfree.com/check-out"
+            else:
+                pay_base_url = "https://payments-test.cashfree.com/check-out"
+            
             # 2. Call Pay Order with UPI COLLECT method
             upi_method = UPIPaymentMethod(
                 upi=Upi(
@@ -60,13 +66,31 @@ class PaymentManager:
                 )
             )
             
-            pay_request = PayOrderRequest(
-                payment_session_id=payment_session_id,
-                payment_method=upi_method
-            )
-            
-            pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
-            
+            try:
+                pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
+            except Exception as pay_err:
+                print(f"DEBUG: Collect failed (Feature probably not enabled): {pay_err}")
+                # FALLBACK: Return standard session link if seamless is disabled
+                payment_link = f"{pay_base_url}/{payment_session_id}"
+                
+                txn_id = db.create_transaction(
+                    user_id=user_id,
+                    txn_type='wallet_add',
+                    amount=amount,
+                    cashfree_order_id=order_id,
+                    payment_link=payment_link,
+                    description=f"Add {format_currency(amount)} via UPI Collect Link ({upi_id})"
+                )
+                
+                return {
+                    'success': True,
+                    'order_id': order_id,
+                    'payment_link': payment_link,
+                    'is_fallback': True,
+                    'amount': amount,
+                    'txn_id': txn_id
+                }
+
             if pay_response and pay_response.data:
                 # Save transaction
                 txn_id = db.create_transaction(

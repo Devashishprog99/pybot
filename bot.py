@@ -282,17 +282,30 @@ async def process_upi_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['pending_payment'] = order_id
     context.user_data.pop('awaiting_upi_id', None)
     
-    sent_msg = await update.message.reply_text(
-        f"🔔 **Payment Request Sent!**\n\n"
-        f"Amount: {format_currency(amount)}\n"
-        f"Target: `{upi_id}`\n\n"
-        f"1. Open your UPI app (GPay/PhonePe/Paytm)\n"
-        f"2. You will see a payment request from Cashfree\n"
-        f"3. Pay it immediately\n\n"
-        f"Wait here for confirmation...",
-        parse_mode='Markdown',
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_payment_{order_id}")]])
-    )
+    if result.get('is_fallback'):
+        payment_link = result['payment_link']
+        sent_msg = await update.message.reply_text(
+            f"🔔 **Direct Request Not Available**\n\n"
+            f"Amount: {format_currency(amount)}\n\n"
+            f"Please click the button below to complete your payment on the secure Cashfree page.",
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("💳 Pay Now", url=payment_link)],
+                [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
+            ])
+        )
+    else:
+        sent_msg = await update.message.reply_text(
+            f"🔔 **Payment Request Sent!**\n\n"
+            f"Amount: {format_currency(amount)}\n"
+            f"Target: `{upi_id}`\n\n"
+            f"1. Open your UPI app (GPay/PhonePe/Paytm)\n"
+            f"2. You will see a payment request from Cashfree\n"
+            f"3. Pay it immediately\n\n"
+            f"Wait here for confirmation...",
+            parse_mode='Markdown',
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]])
+        )
     
     asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
 
