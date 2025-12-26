@@ -97,6 +97,46 @@ class PaymentManager:
                       raw_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
 
             # Bridge Logic
+            payment_link = getattr(order_response.data, 'payment_link', None)
+
+            # Request UPI QR Payload separately
+            try:
+                base_url = "https://api.cashfree.com/pg" if config.CASHFREE_ENV.upper() == 'PRODUCTION' else "https://sandbox.cashfree.com/pg"
+                r = requests.post(
+                    f"{base_url}/orders/{order_id}/pay",
+                    headers={
+                        "x-api-version": "2023-08-01",
+                        "x-client-id": config.CASHFREE_APP_ID,
+                        "x-client-secret": config.CASHFREE_SECRET_KEY
+                    },
+                    json={
+                        "payment_session_id": payment_session_id,
+                        "payment_method": {
+                            "upi": {
+                                "channel": "qrcode"
+                            }
+                        }
+                    },
+                    timeout=5
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    # extract 'qrcode' string from payload
+                    if 'data' in data and 'payload' in data['data']:
+                        raw_link = data['data']['payload'].get('qrcode')
+            except Exception as e:
+                print(f"DTO - Failed to fetch UPI QR: {e}")
+                import traceback
+                traceback.print_exc()
+
+            # Fallback to standard link if extraction failed
+            if not raw_link:
+                 if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                      raw_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                 else:
+                      raw_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+
+            # Bridge Logic
             payment_link = raw_link # Default to raw
             if config.USE_PAYMENT_BRIDGE and config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL:
                  env_tag = config.CASHFREE_ENV.upper()
