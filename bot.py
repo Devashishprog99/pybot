@@ -349,7 +349,7 @@ async def show_transaction_history(update: Update, context: ContextTypes.DEFAULT
     for txn in txns:
         status_emoji = "✅" if txn['status'] == 'success' else "❌" if txn['status'] == 'failed' else "⏳"
         message += f"{status_emoji} {txn['description']}\n"
-        message += f"   {format_currency(abs(txn['amount']))} • {txn['created_at'][:16]}\n\n"
+        message += f"   {format_currency(abs(txn['amount']))} • {str(txn['created_at'])[:16]}\n\n"
     
     await query.edit_message_text(message, parse_mode='Markdown')
 
