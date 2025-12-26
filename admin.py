@@ -244,13 +244,18 @@ class AdminHandler:
         """Display Gmail batch for approval"""
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         
-        # Get sample emails (first 3)
+        # Get sample emails (first 3) and escape underscores
         sample = batch['sample_emails'].split(', ')[:3]
-        sample_text = '\n'.join([f"• `{email}`" for email in sample])
+        sample_text = '\n'.join([f"• `{email.replace('_', '\\_')}`" for email in sample])
+        
+        # Escape username underscores
+        username = batch['username']
+        if username:
+            username = username.replace('_', '\\_')
         
         message = (
             f"📧 **Gmail Batch Approval** ({index + 1}/{total})\n\n"
-            f"👤 Seller: {batch['username']}\n"
+            f"👤 Seller: {username}\n"
             f"📊 Count: {batch['count']} Gmails\n"
             f"📅 Submitted: {format_datetime(batch['created_at'])}\n\n"
             f"**Sample Emails:**\n{sample_text}\n"
