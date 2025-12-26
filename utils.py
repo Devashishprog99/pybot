@@ -100,10 +100,7 @@ def build_wallet_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("➕ Add Money", callback_data="wallet_add")],
         [InlineKeyboardButton("📜 Transaction History", callback_data="wallet_history")],
-        [
-            InlineKeyboardButton("⬅️ Back", callback_data="main_menu"),
-            InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")
-        ]
+        [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -204,10 +201,7 @@ def build_my_activity_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("📦 My Purchases", callback_data="activity_purchases")],
         [InlineKeyboardButton("💵 My Sales", callback_data="activity_sales")],
         [InlineKeyboardButton("💳 Withdrawals", callback_data="activity_withdrawals")],
-        [
-            InlineKeyboardButton("⬅️ Back", callback_data="main_menu"),
-            InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")
-        ]
+        [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
