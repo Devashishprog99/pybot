@@ -73,11 +73,41 @@ class PaymentManager:
                 payment_method=upi_method
             )
             
-            pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
-            
-            # Debug logging
-            print(f"DEBUG: Pay Response: {pay_response}")
-            
+            try:
+                pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
+            except Exception as pay_err:
+                print(f"DEBUG: Direct QR failed (Feature probably not enabled): {pay_err}")
+                # FALLBACK: Return standard session link as QR if seamless is disabled
+                qr_payload = f"https://payments.cashfree.com/order/#{payment_session_id}"
+                
+                # Create QR of the checkout link instead
+                qr = qrcode.QRCode(version=1, box_size=10, border=5)
+                qr.add_data(qr_payload)
+                qr.make(fit=True)
+                img = qr.make_image(fill_color="black", back_color="white")
+                os.makedirs('temp_qrs', exist_ok=True)
+                qr_path = f"temp_qrs/qr_{order_id}.png"
+                img.save(qr_path)
+                
+                txn_id = db.create_transaction(
+                    user_id=user_id,
+                    txn_type='wallet_add',
+                    amount=amount,
+                    cashfree_order_id=order_id,
+                    payment_link=qr_payload,
+                    description=f"Add {format_currency(amount)} to wallet (Link QR)"
+                )
+                
+                return {
+                    'success': True,
+                    'order_id': order_id,
+                    'qr_path': qr_path,
+                    'is_fallback': True,
+                    'expiry': config.PAYMENT_TIMEOUT,
+                    'txn_id': txn_id,
+                    'amount': amount
+                }
+
             if pay_response and pay_response.data:
                 # In Cashfree SDK v4, for UPI QR, the link is usually in data.data or data.payload
                 qr_payload = None
