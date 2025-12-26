@@ -503,7 +503,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.answer()
             context.user_data['awaiting_custom_amount'] = True
             await query.edit_message_text(
-                f"✏️ Enter custom amount ({format_currency(config.MIN_WALLET_ADD)} - {format_currency(config.MAX_WALLET_ADD)}):"
+                f"✏️ Enter custom amount ({format_currency(config.MIN_WALLET_ADD)} - {format_currency(config.MAX_WALLET_ADD)}):",
+                reply_markup=InlineKeyboardMarkup([[]])  # Empty keyboard
             )
         else:
             amount = int(data.split('_')[1])
@@ -512,7 +513,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         order_id = data.replace("cancel_payment_", "")
         await payment_manager.cancel_payment(order_id)
         context.user_data.pop('pending_payment', None)
-        await query.edit_message_text("❌ Payment cancelled.")
+        await query.edit_message_text(
+            "❌ Payment cancelled.",
+            reply_markup=InlineKeyboardMarkup([[]])  # Empty keyboard
+        )
     
     # Buy callbacks
     elif data == "buy_gmails":
