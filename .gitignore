@@ -14,8 +14,8 @@ build/
 dist/
 *.egg-info/
 
-# Database
-*.db
+# Database (allow gmail_marketplace.db for Railway deployment)
+# *.db
 *.sqlite
 *.sqlite3
 
