@@ -149,6 +149,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.pop('awaiting_support_message', None)
         return
 
+    # Admin ticket reply handler
+    if context.user_data.get('awaiting_ticket_reply'):
+        reply_data = context.user_data.pop('awaiting_ticket_reply')
+        ticket_id = reply_data['ticket_id']
+        ticket_user_id = reply_data['user_id']
+        reply_text = update.message.text
+        
+        # Update ticket in database
+        db.update_ticket_status(ticket_id, 'resolved', reply_text)
+        
+        # Send reply to user
+        try:
+            await context.bot.send_message(
+                ticket_user_id,
+                f"💬 **Reply to Ticket #{ticket_id}**\n\n"
+                f"Admin says:\n{reply_text}\n\n"
+                "Thank you for contacting support!",
+                parse_mode='Markdown'
+            )
+            await update.message.reply_text(
+                f"✅ Reply sent to user `{ticket_user_id}`!\n"
+                f"Ticket #{ticket_id} marked as resolved.",
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            await update.message.reply_text(f"❌ Failed to send reply: {e}")
+        return
+
     # Support ticket creation flow
     ticket_step = context.user_data.get('ticket_step')
     if ticket_step == 1:
@@ -178,7 +206,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
         
-        # Notify admins
+        # Notify admins with action buttons
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        admin_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Complete", callback_data=f"ticket_complete_{ticket_id}_{user_id}"),
+                InlineKeyboardButton("💬 Reply", callback_data=f"ticket_reply_{ticket_id}_{user_id}")
+            ]
+        ])
+        
         for admin_id in config.ADMIN_IDS:
             try:
                 await context.bot.send_message(
@@ -186,11 +222,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"🎫 **New Support Ticket #{ticket_id}**\n\n"
                     f"👤 User: `{user_id}`\n"
                     f"📋 Subject: {subject}\n"
-                    f"💬 Message: {text[:200]}...",
+                    f"💬 Message: {text[:300]}",
+                    reply_markup=admin_keyboard,
                     parse_mode='Markdown'
                 )
             except: pass
         return
+
 
     # User ID detection for admins (forwarded messages or numeric IDs)
     if admin_handler.is_admin(user_id):
@@ -748,6 +786,46 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
     
+    # Ticket Complete button - mark as resolved and notify user
+    elif data.startswith("ticket_complete_"):
+        parts = data.split("_")
+        ticket_id = int(parts[2])
+        ticket_user_id = int(parts[3])
+        
+        db.update_ticket_status(ticket_id, 'resolved', 'Ticket resolved by admin.')
+        await query.edit_message_text(
+            query.message.text + "\n\n✅ **RESOLVED**",
+            parse_mode='Markdown'
+        )
+        
+        # Notify user
+        try:
+            await context.bot.send_message(
+                ticket_user_id,
+                f"✅ **Ticket #{ticket_id} Resolved**\n\n"
+                "Your support ticket has been resolved.\n"
+                "Thank you for contacting us!",
+                parse_mode='Markdown'
+            )
+        except: pass
+        await query.answer("Ticket resolved!")
+    
+    # Ticket Reply button - set state to expect reply message
+    elif data.startswith("ticket_reply_"):
+        parts = data.split("_")
+        ticket_id = int(parts[2])
+        ticket_user_id = int(parts[3])
+        
+        context.user_data['awaiting_ticket_reply'] = {'ticket_id': ticket_id, 'user_id': ticket_user_id}
+        await query.answer("Send your reply message now", show_alert=True)
+        await query.message.reply_text(
+            f"💬 **Reply to Ticket #{ticket_id}**\n\n"
+            f"Type your reply message for user `{ticket_user_id}`:\n\n"
+            "The message will be sent to the user via Telegram.",
+            parse_mode='Markdown'
+        )
+    
+
     elif data.startswith("approve_seller_"):
 
 

@@ -234,16 +234,42 @@ def admin_support():
 @app.route('/admin/support/<int:ticket_id>/reply', methods=['POST'])
 @admin_required
 def reply_ticket(ticket_id):
-    """Reply to a support ticket"""
+    """Reply to a support ticket and notify user via Telegram"""
     try:
+        import requests
         data = request.get_json()
         reply = data.get('reply', '')
         status = data.get('status', 'resolved')
         
+        # Get ticket info to find user_id
+        tickets = db.get_all_tickets()
+        ticket = next((t for t in tickets if t['ticket_id'] == ticket_id), None)
+        
+        if not ticket:
+            return jsonify({'success': False, 'error': 'Ticket not found'}), 404
+        
+        # Update ticket in database
         db.update_ticket_status(ticket_id, status, reply)
-        return jsonify({'success': True, 'message': 'Reply sent successfully'})
+        
+        # Send Telegram message to user
+        user_id = ticket['user_id']
+        if reply:
+            try:
+                bot_token = config.TELEGRAM_BOT_TOKEN
+                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                payload = {
+                    'chat_id': user_id,
+                    'text': f"💬 **Reply to Ticket #{ticket_id}**\n\nAdmin says:\n{reply}\n\nThank you for contacting support!",
+                    'parse_mode': 'Markdown'
+                }
+                requests.post(url, json=payload, timeout=5)
+            except:
+                pass
+        
+        return jsonify({'success': True, 'message': 'Reply sent to user via Telegram'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # ==================== INVENTORY ====================
 
