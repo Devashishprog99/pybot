@@ -342,9 +342,14 @@ class AdminHandler:
         """Display withdrawal request for approval"""
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
         
+        # Escape username underscores
+        username = withdrawal['username']
+        if username:
+            username = username.replace('_', '\\_')
+        
         message = (
             f"💰 **Withdrawal Request** ({index + 1}/{total})\n\n"
-            f"👤 Seller: {withdrawal['username']}\n"
+            f"👤 Seller: {username}\n"
             f"🆔 User ID: {withdrawal['user_id']}\n"
             f"💵 Amount: {format_currency(withdrawal['amount'])}\n"
             f"📊 Total Earnings: {format_currency(withdrawal['total_earnings'])}\n"
