@@ -64,10 +64,12 @@ def dashboard():
         return f"<h3>Database Error</h3><p>{str(e)}</p>", 500
 
 @app.route('/pay/<session_id>')
-def pay(session_id):
+@app.route('/pay/<env_override>/<session_id>')
+def pay(session_id, env_override=None):
     """Bridge for Cashfree payment - opens checkout via SDK"""
-    env = config.CASHFREE_ENV.upper()
-    print(f"DEBUG: Payment Bridge accessed. Session: {session_id[:10]}... Mode: {env}")
+    # Use override from URL if present, otherwise fallback to config
+    env = (env_override or config.CASHFREE_ENV).upper()
+    print(f"DEBUG: Payment Bridge accessed. Session: {session_id[:10]}... Mode: {env} (Override: {env_override})")
     return render_template('pay.html', session_id=session_id, env=env.lower())
 
 @app.route('/diag')

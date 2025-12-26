@@ -106,7 +106,8 @@
     </div>
 
     <div class="debug-info">
-        Env: {{ env | upper }} | Session: {{ session_id[:8] }}...
+        Mode: <span style="color: {{ 'cyan' if env == 'production' else '#f87171' }}">{{ env | upper }}</span> | ID: {{
+        session_id[:12] }}...
     </div>
 
     <script>
