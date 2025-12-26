@@ -57,9 +57,9 @@ class PaymentManager:
             if dash_url and not dash_url.startswith('http'):
                 dash_url = f"https://{dash_url}"
             
-            # CRITICAL FIX: Redirect back to the BOT, not the Dashboard/Admin Panel
+            # CRITICAL FIX: Redirect to /close route to auto-close Web App
             # return_url = f"{dash_url}/" if dash_url else "https://t.me/BotFather"
-            return_url = f"https://t.me/{config.BOT_USERNAME}"
+            return_url = f"{dash_url}/close" if dash_url else f"https://t.me/{config.BOT_USERNAME}"
             
             order_meta = OrderMeta(
                 return_url=return_url

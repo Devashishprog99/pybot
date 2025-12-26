@@ -96,8 +96,19 @@ def get_support():
     messages = db.get_support_messages(unread_only=False)
     return jsonify(messages)
 
-@app.route('/api/users')
-@admin_required
+@app.route('/close')
+def close_webapp():
+    """Helper page to close WebApp"""
+    return """
+    <html>
+    <head>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    </head>
+    <body onload="Telegram.WebApp.close()">
+        <p>Closing...</p>
+    </body>
+    </html>
+    """
 def get_users_api():
     """Get all users with statistics"""
     users = db.get_users_with_stats()
