@@ -511,4 +511,94 @@ class AdminHandler:
         else:
             await query.answer("❌ Failed to update user status.")
 
+    @staticmethod
+    async def show_pending_payments(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show sellers awaiting payment for sold Gmails"""
+        query = update.callback_query
+        await query.answer()
+        
+        try:
+            sellers_awaiting_payment = db.get_sellers_awaiting_payment()
+            
+            if not sellers_awaiting_payment:
+                await query.edit_message_text(
+                    "✅ **No pending payments!**\n\n"
+                    "All sellers with sales have been paid.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back to Admin", callback_data="admin_panel")]]),
+                    parse_mode='Markdown'
+                )
+                return
+            
+            context.user_data['pending_payments'] = sellers_awaiting_payment
+            context.user_data['payment_index'] = 0
+            
+            await AdminHandler.display_pending_payment(query, sellers_awaiting_payment[0], 0, len(sellers_awaiting_payment))
+        except Exception as e:
+            print(f"Error in show_pending_payments: {e}")
+            await query.edit_message_text(
+                f"❌ Error loading pending payments: {str(e)}\n\nPlease try again.",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")]])
+            )
+    
+    @staticmethod
+    async def display_pending_payment(query, payment_info, index, total):
+        """Display seller payment info with UPI QR"""
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        
+        # Escape username underscores
+        username = payment_info.get('username', 'Unknown')
+        if username and username != 'Unknown':
+            username = username.replace('_', '\\_')
+        
+        message = (
+            f"💸 **Pending Payment** ({index + 1}/{total})\n\n"
+            f"👤 Seller: {username}\n"
+            f"🆔 User ID: {payment_info['user_id']}\n"
+            f"📧 Sold Gmails: {payment_info['sold_count']}\n"
+            f"💰 Amount Owed: {format_currency(payment_info['amount_owed'])}\n"
+            f"📅 Last Sale: {format_datetime(payment_info['last_sale_date'])}\n\n"
+            "📸 UPI QR Code attached below\n\n"
+            "Click 'Mark as Paid' after transferring payment."
+        )
+        
+        keyboard = [
+            [InlineKeyboardButton("✅ Mark as Paid", callback_data=f"mark_paid_{payment_info['user_id']}")],
+        ]
+        
+        if index > 0:
+            keyboard.append([InlineKeyboardButton("⬅️ Previous", callback_data="payment_prev")])
+        if index < total - 1:
+            if len(keyboard[-1]) == 1:
+                keyboard[-1].append(InlineKeyboardButton("Next ➡️", callback_data="payment_next"))
+            else:
+                keyboard.append([InlineKeyboardButton("Next ➡️", callback_data="payment_next")])
+        
+        keyboard.append([InlineKeyboardButton("🏠 Admin Menu", callback_data="admin_panel")])
+        
+        # Send with QR code
+        try:
+            upi_qr_path = payment_info.get('upi_qr_path')
+            if upi_qr_path:
+                await query.message.reply_photo(
+                    photo=open(upi_qr_path, 'rb'),
+                    caption=message,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+                await query.message.delete()
+            else:
+                await query.edit_message_text(
+                    message + "\n\n⚠️ QR Code not found",
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='Markdown'
+                )
+        except Exception as e:
+            print(f"Error showing QR: {e}")
+            await query.edit_message_text(
+                message + "\n\n⚠️ QR Code not found",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+
 admin_handler = AdminHandler()
+```
