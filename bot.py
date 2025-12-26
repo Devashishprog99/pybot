@@ -242,8 +242,8 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         # However, monitor needs to handle message deletion.
         asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
         
-        # Schedule deletion after 60 seconds
-        asyncio.create_task(delete_message_after_delay(context, query.message.chat_id, sent_msg.message_id, 60))
+        # Schedule live countdown and deletion
+        asyncio.create_task(run_qr_timer(context, query.message.chat_id, sent_msg.message_id, 60))
         
         # Delete the previous "menu" message to clean up chat
         try:
@@ -271,13 +271,40 @@ def generate_qr_image(data):
     bio.seek(0)
     return bio
 
-async def delete_message_after_delay(context, chat_id, message_id, delay):
-    """Delete message after delay"""
-    await asyncio.sleep(delay)
+async def run_qr_timer(context, chat_id, message_id, duration):
+    """Update message with countdown and then delete"""
+    import asyncio
+    remaining = duration
+    
+    # Store original caption parts or simplified one
+    base_caption = (
+        "💳 **Payment Initiated**\n"
+        "👤 Paying to: **OTT4YOU**\n"
+        "scan the QR code to pay instantly.\n\n"
+        "👇 **Other Ways:**"
+    )
+    
+    while remaining > 0:
+        await asyncio.sleep(10) # Update every 10 seconds to avoid rate limits
+        remaining -= 10
+        if remaining <= 0: break
+        
+        try:
+            current_caption = f"{base_caption}\n⏳ **Expires in: {remaining}s**"
+            await context.bot.edit_message_caption(
+                chat_id=chat_id,
+                message_id=message_id,
+                caption=current_caption,
+                parse_mode='Markdown'
+            )
+        except Exception:
+            # Message might be deleted or user blocked bot
+            break
+            
+    # Time's up
     try:
         await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-    except Exception as e:
-        # Message might already be deleted or payment completed
+    except Exception:
         pass
 
 async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, order_id: str, message_id: int, qr_path: str = None):

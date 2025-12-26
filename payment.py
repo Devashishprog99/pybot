@@ -113,7 +113,7 @@ class PaymentManager:
                         "payment_session_id": payment_session_id,
                         "payment_method": {
                             "upi": {
-                                "channel": "qrcode"
+                                "channel": "link"
                             }
                         }
                     },
@@ -121,9 +121,13 @@ class PaymentManager:
                 )
                 if r.status_code == 200:
                     data = r.json()
-                    # extract 'qrcode' string from payload
+                    # extract 'qrcode' string from payload (For channel=link, key is usually 'link' or inside payload)
+                    # Docs say payload structure varies. For 'link', it returns payload -> { "upi": "upi://..." } or similar
+                    # Let's check payload keys safely.
                     if 'data' in data and 'payload' in data['data']:
-                        raw_link = data['data']['payload'].get('qrcode')
+                        payload = data['data']['payload']
+                        # Try common keys
+                        raw_link = payload.get('link') or payload.get('qrcode') or payload.get('upi')
             except Exception as e:
                 print(f"DTO - Failed to fetch UPI QR: {e}")
                 import traceback
