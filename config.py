@@ -17,10 +17,10 @@ CASHFREE_SECRET_KEY = os.getenv('CASHFREE_SECRET_KEY')
 CASHFREE_ENV = os.getenv('CASHFREE_ENV', 'TEST')  # TEST or PRODUCTION
 
 # Pricing Configuration
-SELL_RATE = int(os.getenv('SELL_RATE', 9))  # Updated to 9
-BUY_RATE = int(os.getenv('BUY_RATE', 15))  # Rs per Gmail for buyers
-MIN_SELL_QUANTITY = int(os.getenv('MIN_SELL_QUANTITY', 10))
-MIN_BUY_QUANTITY = int(os.getenv('MIN_BUY_QUANTITY', 5))
+SELL_RATE = float(os.getenv('SELL_RATE', 9.0))
+BUY_RATE = float(os.getenv('BUY_RATE', 15.0))
+MIN_SELL_QUANTITY = int(os.getenv('MIN_SELL_QUANTITY', 5))
+MIN_BUY_QUANTITY = int(os.getenv('MIN_BUY_QUANTITY', 8))
 
 # Wallet Configuration
 MIN_WALLET_ADD = int(os.getenv('MIN_WALLET_ADD', 15))
