@@ -7,13 +7,8 @@ from flask_cors import CORS
 from functools import wraps
 import config
 
-# Try MongoDB first, fallback to SQLite
-try:
-    from mongodb import db
-    USE_MONGODB = True
-except:
-    from database import db
-    USE_MONGODB = False
+# Always use SQLite database (same as Telegram bot)
+from database import db
 
 app = Flask(__name__)
 app.secret_key = config.CASHFREE_SECRET_KEY or "dev-secret-key-123" # Fallback if key missing
