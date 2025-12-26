@@ -85,24 +85,25 @@ class PaymentManager:
                 
             payment_session_id = order_response.data.payment_session_id
             
+            # Determine payment link
             # Priority 1: Use the native payment_link from response if available
-            payment_link = getattr(order_response.data, 'payment_link', None)
+            raw_link = getattr(order_response.data, 'payment_link', None)
             
-            if not payment_link:
-                # Priority 2: Use Bridge only if configured
-                if config.USE_PAYMENT_BRIDGE and config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL:
-                    env_tag = config.CASHFREE_ENV.upper()
-                    payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
-                else:
-                    # Priority 3: Fallback to official hashtag + slash format
-                    if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                        payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
-                    else:
-                        # Sandbox has a different specific path for the redirect page
-                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+            # Fallback construction if raw_link missing
+            if not raw_link:
+                 if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                      raw_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
+                 else:
+                      raw_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
+
+            # Bridge Logic
+            payment_link = raw_link # Default to raw
+            if config.USE_PAYMENT_BRIDGE and config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL:
+                 env_tag = config.CASHFREE_ENV.upper()
+                 payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
             
             LAST_GENERATED_LINK = payment_link
-            print(f"DEBUG: Generated Payment Link ({config.CASHFREE_ENV}): {payment_link}")
+            print(f"DEBUG: Generated Links - Bridge: {payment_link}, Raw: {raw_link}")
             
             # Save transaction
             txn_id = db.create_transaction(
@@ -110,14 +111,15 @@ class PaymentManager:
                 txn_type='wallet_add',
                 amount=amount,
                 cashfree_order_id=order_id,
-                payment_link=payment_link,
+                payment_link=payment_link, # Saves the Bridge Link if active
                 description=f"Add {format_currency(amount)} to wallet"
             )
             
             return {
                 'success': True,
                 'order_id': order_id,
-                'payment_link': payment_link,
+                'payment_link': payment_link, # Bridge Link (if enabled)
+                'raw_link': raw_link,         # Always the direct provider link
                 'amount': amount,
                 'txn_id': txn_id
             }

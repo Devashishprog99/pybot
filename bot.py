@@ -200,6 +200,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     
     order_id = result['order_id']
     payment_link = result['payment_link']
+    raw_link = result.get('raw_link', payment_link) # Get raw provider link
     context.user_data['pending_payment'] = order_id
     
     message = (
@@ -224,7 +225,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
 
         keyboard = [
             [InlineKeyboardButton(f"📱 Pay {format_currency(amount)} Inside App", web_app=WebAppInfo(url=payment_link))],
-            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=f"{payment_link}?auto_app=true")],
+            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=raw_link)],
             [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
         ]
         
