@@ -4,6 +4,9 @@ Cashfree Payment Gateway Integration
 import asyncio
 import qrcode
 import os
+import urllib3
+# Suppress InsecureRequestWarning from Cashfree SDK
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from io import BytesIO
 from datetime import datetime, timedelta
 from cashfree_pg.models.create_order_request import CreateOrderRequest
