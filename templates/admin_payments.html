@@ -142,17 +142,18 @@
     <div class="payments">
         {% if payments %}
         {% for p in payments %}
-        <div class="payment-card" id="payment-{{ p.user_id }}">
+        <div class="payment-card" id="payment-{{ p.user_id }}" data-userid="{{ p.user_id }}">
             <div class="payment-info">
                 <h3>{{ p.username or p.user_id }}</h3>
                 <p>📧 {{ p.sold_count }} Gmails sold • Last sale: {{ p.last_sale_date or 'N/A' }}</p>
             </div>
             <div style="display: flex; align-items: center; gap: 1.5rem;">
                 <div class="payment-amount">₹{{ p.amount_owed }}</div>
-                <button class="btn btn-success" onclick="markPaid({{ p.user_id }}, this)">✅ Mark Paid</button>
+                <button class="btn btn-success" onclick="markPaid('{{ p.user_id }}', this)">✅ Mark Paid</button>
             </div>
         </div>
         {% endfor %}
+
         {% else %}
         <div class="empty">
             <h3>✅ All Paid!</h3>
