@@ -127,17 +127,32 @@
 
         if (isMobile) {
             document.getElementById('upi-container').style.display = 'block';
-            // Set the button to open the current URL in system browser
-            // Cashfree's page handles the actual UPI intent triggering better in Chrome/Safari
-            document.getElementById('upi-btn').onclick = function (e) {
-                e.preventDefault();
+
+            const openSystemBrowser = function () {
                 // Telegram WebApp method to open link in external browser
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.openLink(window.location.href);
+                    window.Telegram.WebApp.openLink(window.location.href.split('?')[0]);
                 } else {
-                    window.open(window.location.href, '_system');
+                    window.open(window.location.href.split('?')[0], '_system');
                 }
             };
+
+            document.getElementById('upi-btn').onclick = function (e) {
+                e.preventDefault();
+                openSystemBrowser();
+            };
+
+            // Auto-trigger if requested
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('auto_app') === 'true') {
+                console.log("Auto-triggering app open...");
+                document.getElementById('upi-btn').innerText = "🚀 Opening App...";
+
+                // Small delay to ensure page init
+                setTimeout(() => {
+                    openSystemBrowser();
+                }, 500);
+            }
         }
 
         console.log(`Initializing Cashfree in ${envMode} mode for session ${sessionId.substring(0, 8)}...`);

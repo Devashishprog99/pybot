@@ -223,7 +223,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
 
         keyboard = [
             [InlineKeyboardButton(f"📱 Pay {format_currency(amount)} Inside App", web_app=WebAppInfo(url=payment_link))],
-            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=payment_link)],
+            [InlineKeyboardButton("🚀 Pay via App (Direct)", url=f"{payment_link}?auto_app=true")],
             [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
         ]
         
