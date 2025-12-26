@@ -54,9 +54,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Check if it's a menu button press - these should ALWAYS work, interrupting any flow
     menu_buttons = ["💰 Wallet", "🛒 Buy Gmails", "📤 Sell Gmails", "📊 My Activity", "ℹ️ Help", "⬅️ Back", "⚙️ Admin Panel"]
     if text in menu_buttons:
-        # Clear all pending states
-        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity', 'pending_payment']:
-            context.user_data.pop(key, None)
+        # For Buy and Sell, don't clear state - they set their own state
+        # For other menu buttons, clear state to interrupt flows
+        if text not in ["🛒 Buy Gmails", "📤 Sell Gmails"]:
+            # Clear all pending states
+            for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity', 'pending_payment']:
+                context.user_data.pop(key, None)
         
         # Handle the menu button
         if text == "💰 Wallet":
