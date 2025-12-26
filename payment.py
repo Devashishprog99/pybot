@@ -25,6 +25,73 @@ Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV == "PRODUCTIO
 class PaymentManager:
     
     @staticmethod
+    async def create_collect_payment(user_id: int, amount: float, upi_id: str) -> dict:
+        """Create Cashfree order and send a UPI Collect request (notification)"""
+        try:
+            order_id = generate_order_id()
+            
+            customer = CustomerDetails(
+                customer_id=str(user_id),
+                customer_phone=f"9{str(user_id)[-9:].zfill(9)}"
+            )
+            
+            # 1. Create Order
+            order_request = CreateOrderRequest(
+                order_amount=amount,
+                order_currency="INR",
+                order_id=order_id,
+                customer_details=customer,
+                order_expiry_time=(datetime.utcnow() + timedelta(minutes=16)).strftime('%Y-%m-%dT%H:%M:%SZ')
+            )
+            
+            x_api_version = "2023-08-01"
+            order_response = Cashfree().PGCreateOrder(x_api_version, order_request)
+            
+            if not order_response or not order_response.data:
+                return {'success': False, 'error': 'Failed to create order'}
+                
+            payment_session_id = order_response.data.payment_session_id
+            
+            # 2. Call Pay Order with UPI COLLECT method
+            upi_method = UPIPaymentMethod(
+                upi=Upi(
+                    channel="collect",
+                    upi_id=upi_id
+                )
+            )
+            
+            pay_request = PayOrderRequest(
+                payment_session_id=payment_session_id,
+                payment_method=upi_method
+            )
+            
+            pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
+            
+            if pay_response and pay_response.data:
+                # Save transaction
+                txn_id = db.create_transaction(
+                    user_id=user_id,
+                    txn_type='wallet_add',
+                    amount=amount,
+                    cashfree_order_id=order_id,
+                    payment_link="UPI_COLLECT",
+                    description=f"Add {format_currency(amount)} via UPI Collect ({upi_id})"
+                )
+                
+                return {
+                    'success': True,
+                    'order_id': order_id,
+                    'txn_id': txn_id,
+                    'amount': amount
+                }
+                
+            return {'success': False, 'error': 'Failed to send collect request'}
+            
+        except Exception as e:
+            print(f"Collect Payment error: {e}")
+            return {'success': False, 'error': str(e)}
+
+    @staticmethod
     async def create_qr_payment(user_id: int, amount: float, user_phone: str = None) -> dict:
         """Create Cashfree order and generate a UPI QR code image"""
         try:

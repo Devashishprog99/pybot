@@ -16,7 +16,7 @@ from mongodb import db
 from utils import (
     build_main_menu, welcome_message, help_message,
     build_wallet_keyboard, build_amount_keyboard, build_my_activity_keyboard,
-    format_currency, format_countdown, build_contact_keyboard
+    format_currency, format_countdown, build_contact_keyboard, build_payment_method_keyboard
 )
 from payment import payment_manager
 from seller import seller_handler
@@ -77,6 +77,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('awaiting_quantity'):
         # Custom purchase quantity
         await buyer_handler.process_custom_quantity(update, context)
+        return
+
+    elif context.user_data.get('awaiting_upi_id'):
+        await process_upi_id(update, context)
         return
 
     elif context.user_data.get('awaiting_support_message'):
@@ -176,11 +180,21 @@ async def show_add_money(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def process_amount_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, amount: int):
-    """Process amount selection and create payment"""
+    """Show payment method selection after amount is chosen"""
     query = update.callback_query
     await query.answer()
     
-    user_id = update.effective_user.id
+    await query.edit_message_text(
+        f"💳 **Select Payment Method**\n\n"
+        f"Amount: {format_currency(amount)}\n\n"
+        "Choose how you want to pay:",
+        reply_markup=build_payment_method_keyboard(amount),
+        parse_mode='Markdown'
+    )
+
+async def initiate_qr_payment(query, context, amount):
+    """Create QR payment (Link Fallback)"""
+    user_id = query.from_user.id
     
     # Create QR payment order
     result = await payment_manager.create_qr_payment(user_id, float(amount))
@@ -193,44 +207,82 @@ async def process_amount_selection(update: Update, context: ContextTypes.DEFAULT
     
     order_id = result['order_id']
     qr_path = result['qr_path']
-    
-    # Save order_id in context for monitoring
     context.user_data['pending_payment'] = order_id
     
-    message = (
-        f"💳 **Pay via UPI QR**\n\n"
+    msg_text = (
+        f"🖼️ **Pay via QR**\n\n"
         f"Amount: {format_currency(amount)}\n"
         f"⏱️ Expires in: 15:00\n\n"
-        "1. Scan the QR code below\n"
-        "2. Complete the payment in your UPI app\n"
-        "3. Wait here for confirmation\n\n"
-        "⚠️ Do not close this chat until confirmed!"
+        "Scan the QR below to pay.\n"
+        "⚠️ If it opens a web page, you can complete payment there."
     )
     
-    # Send QR as photo
     sent_photo = await query.message.reply_photo(
         photo=open(qr_path, 'rb'),
-        caption=message,
+        caption=msg_text,
         parse_mode='Markdown',
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]])
     )
-    
     await query.message.delete()
-    
-    # Start payment monitoring
     asyncio.create_task(monitor_payment(context, user_id, order_id, sent_photo.message_id, qr_path))
 
-async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, order_id: str, message_id: int, qr_path: str):
+async def initiate_collect_payment(query, context, amount):
+    """Ask for UPI ID for Collect payment"""
+    context.user_data['awaiting_upi_id'] = True
+    context.user_data['collect_amount'] = amount
+    
+    await query.edit_message_text(
+        "📱 **Direct UPI Request**\n\n"
+        "Please type your **UPI ID** (VPA) below:\n"
+        "Examples: `username@okaxis`, `9876543210@paytm`\n\n"
+        "I will send a payment request directly to your app.",
+        parse_mode='Markdown'
+    )
+
+async def process_upi_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Process provided UPI ID and send request"""
+    upi_id = update.message.text.strip()
+    amount = context.user_data.get('collect_amount')
+    user_id = update.effective_user.id
+    
+    if '@' not in upi_id:
+        await update.message.reply_text("❌ Invalid UPI ID. Please check and try again.")
+        return
+    
+    # Create Collect payment
+    result = await payment_manager.create_collect_payment(user_id, float(amount), upi_id)
+    
+    if not result.get('success'):
+        await update.message.reply_text(f"❌ Error sending request: {result.get('error')}")
+        return
+    
+    order_id = result['order_id']
+    context.user_data['pending_payment'] = order_id
+    context.user_data.pop('awaiting_upi_id', None)
+    
+    sent_msg = await update.message.reply_text(
+        f"🔔 **Payment Request Sent!**\n\n"
+        f"Amount: {format_currency(amount)}\n"
+        f"Target: `{upi_id}`\n\n"
+        f"1. Open your UPI app (GPay/PhonePe/Paytm)\n"
+        f"2. You will see a payment request from Cashfree\n"
+        f"3. Pay it immediately\n\n"
+        f"Wait here for confirmation...",
+        parse_mode='Markdown',
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancel", callback_data=f"cancel_payment_{order_id}")]])
+    )
+    
+    asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
+
+async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, order_id: str, message_id: int, qr_path: str = None):
     """Monitor payment status and update message"""
     import time
-    
     start_time = time.time()
     timeout = config.PAYMENT_TIMEOUT
     
     while time.time() - start_time < timeout:
-        # Check if cancelled
         if context.user_data.get('pending_payment') != order_id:
-            if os.path.exists(qr_path): os.remove(qr_path)
+            if qr_path and os.path.exists(qr_path): os.remove(qr_path)
             return
         
         # Check payment status
@@ -374,6 +426,14 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             amount = int(data.split('_')[1])
             await process_amount_selection(update, context, amount)
+    elif data.startswith("paymethod_"):
+        parts = data.split('_')
+        method = parts[1]
+        amount = int(parts[2])
+        if method == "qr":
+            await initiate_qr_payment(query, context, amount)
+        elif method == "collect":
+            await initiate_collect_payment(query, context, amount)
     elif data.startswith("cancel_payment_"):
         order_id = data.replace("cancel_payment_", "")
         await payment_manager.cancel_payment(order_id)
