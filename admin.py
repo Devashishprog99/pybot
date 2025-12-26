@@ -683,22 +683,27 @@ class AdminHandler:
             f"💰 Amount Owed: {format_currency(payment_info['amount_owed'])}\n"
             f"📅 Last Sale: {format_datetime(payment_info['last_sale_date'])}\n\n"
             "📸 UPI QR Code attached below\n\n"
-            "Click 'Mark as Paid' after transferring payment."
+            "**Options:**\n"
+            "• Upload payment screenshot (recommended)\n"
+            "• Or click 'Mark as Paid' directly"
         )
         
         keyboard = [
-            [InlineKeyboardButton("✅ Mark as Paid", callback_data=f"mark_paid_{payment_info['user_id']}")],
+            [InlineKeyboardButton("📤 Upload Payment Proof", callback_data=f"upload_proof_{payment_info['user_id']}")],
+            [InlineKeyboardButton("✅ Mark as Paid (No Proof)", callback_data=f"mark_paid_{payment_info['user_id']}")],
         ]
         
+        # Pagination
+        nav_row = []
         if index > 0:
-            keyboard.append([InlineKeyboardButton("⬅️ Previous", callback_data="payment_prev")])
+            nav_row.append(InlineKeyboardButton("◀️ Prev", callback_data="payment_prev"))
         if index < total - 1:
-            if len(keyboard[-1]) == 1:
-                keyboard[-1].append(InlineKeyboardButton("Next ➡️", callback_data="payment_next"))
-            else:
-                keyboard.append([InlineKeyboardButton("Next ➡️", callback_data="payment_next")])
+            nav_row.append(InlineKeyboardButton("Next ▶️", callback_data="payment_next"))
+        if nav_row:
+            keyboard.append(nav_row)
         
         keyboard.append([InlineKeyboardButton("🏠 Admin Menu", callback_data="admin_panel")])
+
         
         # Send with QR code
         try:

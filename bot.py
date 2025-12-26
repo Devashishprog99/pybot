@@ -167,13 +167,55 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle photo uploads"""
+    user_id = update.effective_user.id
+    
+    # Admin payment proof upload
+    if context.user_data.get('awaiting_payment_proof'):
+        seller_user_id = context.user_data.pop('awaiting_payment_proof')
+        
+        if not update.message.photo:
+            await update.message.reply_text("❌ Please send a valid image.")
+            return
+        
+        photo = update.message.photo[-1]
+        
+        # Mark as paid
+        count = db.mark_seller_gmails_as_paid(seller_user_id)
+        
+        # Send confirmation to admin
+        await update.message.reply_text(
+            f"✅ **Payment Confirmed!**\n\n"
+            f"Seller: `{seller_user_id}`\n"
+            f"Gmails: {count}\n\n"
+            f"Screenshot sent to seller!",
+            parse_mode='Markdown'
+        )
+        
+        # Forward screenshot to seller with message
+        try:
+            await context.bot.send_photo(
+                chat_id=seller_user_id,
+                photo=photo.file_id,
+                caption="💸 **Payment Received!**\n\n"
+                        "Your payment has been processed by admin.\n"
+                        f"Amount for {count} sold Gmail(s) has been cleared.\n\n"
+                        "📸 Payment proof attached above.\n"
+                        "Thank you for selling on our platform!",
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            print(f"Failed to notify seller: {e}")
+            await update.message.reply_text(f"⚠️ Could not notify seller: {e}")
+        
+        return
+    
     if context.user_data.get('seller_step') == 3:
         # UPI QR for new seller flow (after Gmail validation)
-        user_id = update.effective_user.id
         
         if not update.message.photo:
             await update.message.reply_text("❌ Please send a valid QR code image.")
             return
+
         
         # Download and save QR code
         photo = update.message.photo[-1]  # Get highest resolution
@@ -641,7 +683,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "pending_batches":
         await admin_handler.show_pending_batches(update, context)
     
+    # Payment proof upload - set state to expect photo
+    elif data.startswith("upload_proof_"):
+        seller_user_id = int(data.replace("upload_proof_", ""))
+        context.user_data['awaiting_payment_proof'] = seller_user_id
+        await query.answer("📸 Please send the payment screenshot now", show_alert=True)
+        await query.message.reply_text(
+            f"📸 **Upload Payment Proof**\n\n"
+            f"Please send the payment screenshot for seller ID: `{seller_user_id}`\n\n"
+            f"The screenshot will be sent to the seller as proof of payment.",
+            parse_mode='Markdown'
+        )
+    
     elif data.startswith("approve_seller_"):
+
 
         seller_id = int(data.split('_')[2])
         await admin_handler.approve_seller(update, context, seller_id)
