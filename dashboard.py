@@ -16,14 +16,17 @@ except:
     USE_MONGODB = False
 
 app = Flask(__name__)
-app.secret_key = config.CASHFREE_SECRET_KEY  # Use for session encryption
+app.secret_key = config.CASHFREE_SECRET_KEY or "dev-secret-key-123" # Fallback if key missing
 CORS(app)
 
 # Admin authentication decorator
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'admin_id' not in session or int(session['admin_id']) not in config.ADMIN_IDS:
+        try:
+            if 'admin_id' not in session or int(session['admin_id']) not in config.ADMIN_IDS:
+                return redirect(url_for('login'))
+        except (ValueError, TypeError, KeyError):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -52,9 +55,13 @@ def logout():
 @app.route('/dashboard')
 @admin_required
 def dashboard():
-    stats = db.get_stats()
-    analytics = db.get_time_based_analytics()
-    return render_template('dashboard.html', stats=stats, analytics=analytics)
+    try:
+        stats = db.get_stats()
+        analytics = db.get_time_based_analytics()
+        return render_template('dashboard.html', stats=stats, analytics=analytics)
+    except Exception as e:
+        print(f"DASHBOARD ERROR: {e}")
+        return f"<h3>Database Error</h3><p>{str(e)}</p>", 500
 
 @app.route('/pay/<session_id>')
 def pay(session_id):

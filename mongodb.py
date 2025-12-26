@@ -2,7 +2,7 @@
 MongoDB Database Module for Gmail Marketplace Bot
 """
 from pymongo import MongoClient, ASCENDING, DESCENDING
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 import config
 
