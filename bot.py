@@ -206,7 +206,23 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['pending_payment'] = order_id
     
     # 1. Generate QR Code
-    qr_bio = generate_qr_image(raw_link)
+    # Check if raw_link is a Base64 string (Cashfree native QR)
+    # Base64 strings are usually long and don't contain spaces.
+    import base64
+    
+    qr_bio = None
+    if raw_link and len(raw_link) > 500 and " " not in raw_link:
+        try:
+             # Decode Base64 to image
+             qr_data = base64.b64decode(raw_link)
+             qr_bio = io.BytesIO(qr_data)
+             qr_bio.seek(0)
+        except Exception as e:
+             logger.error(f"Failed to decode Base64 QR: {e}")
+    
+    # Fallback: Generate QR from string if not Base64 or decode failed
+    if not qr_bio:
+        qr_bio = generate_qr_image(raw_link)
     
     message = (
         f"💳 **Payment Initiated**\n"
