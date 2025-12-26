@@ -511,12 +511,25 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     dash_url = config.DASHBOARD_URL or "Not Set"
-    use_bridge = "ENABLED" if config.USE_PAYMENT_BRIDGE else "DISABLED (Using Direct Links)"
+    use_bridge = "✅ ENABLED" if config.USE_PAYMENT_BRIDGE else "❌ DISABLED (Direct Links)"
     
     # Masked keys for safety
     app_id = config.CASHFREE_APP_ID
     masked_id = f"{app_id[:4]}...{app_id[-4:]}" if len(app_id) > 4 else "NOT SET"
     
+    # Environment Mismatch Detection
+    env_status = "✅ Mode & Keys Match"
+    env_warning = ""
+    is_test_key = app_id.upper().startswith("TEST")
+    is_prod_env = config.CASHFREE_ENV.upper() == "PRODUCTION"
+    
+    if is_prod_env and is_test_key:
+        env_status = "⚠️ **MISMATCH DETECTED**"
+        env_warning = "\n⚠️ **WARNING**: You are in `PRODUCTION` mode but using a `TEST` App ID. Standard payments will fail with 'Session Invalid'."
+    elif not is_prod_env and not is_test_key:
+        env_status = "⚠️ **MISMATCH DETECTED**"
+        env_warning = "\n⚠️ **WARNING**: You are in `TEST` mode but using what looks like a `PRODUCTION` App ID."
+
     # Check for empty keys
     status = "✅ OK"
     if not config.CASHFREE_APP_ID or not config.CASHFREE_SECRET_KEY:
@@ -524,12 +537,14 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     message = (
         "⚙️ **System Configuration Check**\n\n"
-        f"📋 Status: `{status}`\n"
+        f"📋 Key Status: `{status}`\n"
         f"🏁 **Mode**: `{config.CASHFREE_ENV}`\n"
+        f"⚖️ **Env Match**: {env_status}\n"
         f"🆔 **App ID**: `{masked_id}`\n"
         f"🌐 **Dashboard**: `{dash_url}`\n"
-        f"🌉 **Bridge**: `{use_bridge}`\n\n"
-        "💡 *Tip: If you get 'Session Invalid', ensure your App ID and Secret match your Mode (Test Keys for TEST, Prod Keys for PRODUCTION).* "
+        f"🌉 **Bridge**: `{use_bridge}`\n"
+        f"{env_warning}\n"
+        "💡 *Tip: If you just changed Railway variables, make sure to RESTART the bot deployment to apply them.*"
     )
     await update.message.reply_text(message, parse_mode='Markdown')
 
