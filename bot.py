@@ -583,6 +583,47 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await admin_handler.show_pending_gmails(update, context)
     elif data == "admin_withdrawals":
         await admin_handler.show_pending_withdrawals(update, context)
+    elif data == "admin_pending_payments":
+        await admin_handler.show_pending_payments(update, context)
+    elif data == "payment_prev":
+        # Navigate to previous pending payment
+        payments = context.user_data.get('pending_payments', [])
+        index = context.user_data.get('payment_index', 0)
+        if index > 0:
+            context.user_data['payment_index'] = index - 1
+            await admin_handler.display_pending_payment(query, payments[index - 1], index - 1, len(payments))
+    elif data == "payment_next":
+        # Navigate to next pending payment
+        payments = context.user_data.get('pending_payments', [])
+        index = context.user_data.get('payment_index', 0)
+        if index < len(payments) - 1:
+            context.user_data['payment_index'] = index + 1
+            await admin_handler.display_pending_payment(query, payments[index + 1], index + 1, len(payments))
+    elif data.startswith("mark_paid_"):
+        # Mark seller as paid
+        seller_user_id = int(data.replace("mark_paid_", ""))
+        await query.answer("Processing payment...")
+        
+        # Mark all sold Gmails for this seller as paid
+        count = db.mark_seller_gmails_as_paid(seller_user_id)
+        
+        if count > 0:
+            await query.edit_message_caption(
+                caption=f"✅ **Payment Confirmed!**\n\n{count} Gmail(s) marked as paid.\nSeller has been notified.",
+                parse_mode='Markdown'
+            )
+            
+            # Notify seller
+            try:
+                await context.bot.send_message(
+                    chat_id=seller_user_id,
+                    text="💸 **Payment Received!**\n\nYour payment has been processed by admin.\n"
+                         f"Amount for {count} sold Gmail(s) has been cleared.\n\nThank you!"
+                )
+            except:
+                pass
+        else:
+            await query.answer("❌ No unpaid Gmails found for this seller.")
     elif data.startswith("approve_seller_"):
         seller_id = int(data.split('_')[2])
         await admin_handler.approve_seller(update, context, seller_id)
