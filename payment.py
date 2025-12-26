@@ -121,11 +121,20 @@ class PaymentManager:
                 )
                 if r.status_code == 200:
                     data = r.json()
+                    print(f"=== CASHFREE QR RESPONSE ===")
+                    print(f"Full response: {data}")
                     # extract 'qrcode' string from payload
                     # For channel='qrcode', payload.qrcode is typically a Base64 string of the image
                     if 'data' in data and 'payload' in data['data']:
                         payload = data['data']['payload']
-                        raw_link = payload.get('qrcode') # This should be the Base64 png
+                        print(f"Payload keys: {payload.keys()}")
+                        raw_link = payload.get('qrcode') or payload.get('bhim') or payload.get('upi_link')
+                        if raw_link:
+                            print(f"Extracted QR data (first 100 chars): {raw_link[:100]}")
+                        else:
+                            print(f"No QR data found in payload: {payload}")
+                else:
+                    print(f"Cashfree /pay API failed with status {r.status_code}: {r.text}")
             except Exception as e:
                 print(f"DTO - Failed to fetch UPI QR: {e}")
                 import traceback
