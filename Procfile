@@ -1,2 +1,1 @@
-bot: python bot.py
-web: gunicorn dashboard:app
+web: python run.py

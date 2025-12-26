@@ -966,17 +966,32 @@ async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode='Markdown'
     )
 
-        # Add handlers
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("check", check_command))
-        app.add_handler(CommandHandler("logs", logs_command))
-        app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(help_message(), parse_mode='Markdown')))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-        app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-        app.add_handler(CallbackQueryHandler(handle_callback))
-        
-        # Error handler
-        app.add_error_handler(error_handler)
+def create_bot_application():
+    """Create and configure the bot application"""
+    # Validate configuration
+    config.validate_config()
+    
+    # Create application
+    app = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
+    
+    # Add handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("check", check_command))
+    app.add_handler(CommandHandler("logs", logs_command))
+    app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(help_message(), parse_mode='Markdown')))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    app.add_handler(CallbackQueryHandler(handle_callback))
+    
+    # Error handler
+    app.add_error_handler(error_handler)
+    
+    return app
+
+def main():
+    """Start the bot"""
+    try:
+        app = create_bot_application()
         
         # Start bot
         logger.info("Bot started successfully!")
@@ -993,3 +1008,4 @@ async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 if __name__ == "__main__":
     main()
+
