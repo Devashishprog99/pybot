@@ -27,6 +27,7 @@ class SellerHandler:
         # Check if already a seller
         seller = await SellerHandler.check_seller_status(user_id)
         
+        is_new_seller = False
         if not seller:
             # Auto-register as approved seller
             success = db.create_seller(user_id, upi_qr_path="pending")
@@ -35,10 +36,15 @@ class SellerHandler:
                 seller_record = db.get_seller(user_id)
                 if seller_record:
                     db.approve_seller(seller_record['seller_id'], user_id, approved=True)
+                    is_new_seller = True
+        
+        # Show registration confirmation for new sellers
+        registration_msg = "✅ **Registered as seller!**\n\n" if is_new_seller else ""
         
         # Go directly to Gmail submission
         context.user_data['seller_step'] = 2
         await update.message.reply_text(
+            f"{registration_msg}"
             "📧 **Submit Your Gmail Accounts**\n\n"
             "⚠️ **IMPORTANT REQUIREMENTS:**\n"
             "**• GMAILS MUST NOT HAVE PHONE NUMBER ADDED**\n"
