@@ -127,7 +127,7 @@ def build_buy_keyboard(available: int) -> InlineKeyboardMarkup:
     keyboard = []
     
     # Quick select buttons
-    quantities = [5, 10, 20, 50]
+    quantities = [2, 5, 10, 20, 50]
     row = []
     for qty in quantities:
         if qty <= available:

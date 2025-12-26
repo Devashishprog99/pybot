@@ -22,8 +22,8 @@ DASHBOARD_URL = os.getenv('DASHBOARD_URL', 'http://localhost:5000')
 # Pricing Configuration
 SELL_RATE = float(os.getenv('SELL_RATE', 9.0))
 BUY_RATE = float(os.getenv('BUY_RATE', 15.0))
-MIN_SELL_QUANTITY = int(os.getenv('MIN_SELL_QUANTITY', 5))
-MIN_BUY_QUANTITY = int(os.getenv('MIN_BUY_QUANTITY', 8))
+MIN_SELL_QUANTITY = int(os.getenv('MIN_SELL_QUANTITY', 2))
+MIN_BUY_QUANTITY = int(os.getenv('MIN_BUY_QUANTITY', 2))
 
 # Wallet Configuration
 MIN_WALLET_ADD = int(os.getenv('MIN_WALLET_ADD', 15))
