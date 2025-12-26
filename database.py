@@ -675,5 +675,26 @@ class Database:
         finally:
             conn.close()
 
+    def mark_seller_gmails_as_paid(self, user_id: int) -> int:
+        """Mark all sold Gmails from a seller as paid"""
+        conn = self.get_connection()
+        try:
+            # Get seller_id from user_id
+            seller = self.get_seller(user_id)
+            if not seller:
+                return 0
+            
+            # Update all sold but unpaid Gmails
+            result = conn.execute('''
+                UPDATE gmails 
+                SET is_paid_to_seller = 1
+                WHERE seller_id = ? AND status = 'sold' AND is_paid_to_seller = 0
+            ''', (seller['seller_id'],))
+            
+            conn.commit()
+            return result.rowcount
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
