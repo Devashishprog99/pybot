@@ -70,8 +70,8 @@ class PaymentManager:
                 pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
             except Exception as pay_err:
                 print(f"DEBUG: Collect failed (Feature probably not enabled): {pay_err}")
-                # FALLBACK: Return standard session link if seamless is disabled
-                payment_link = f"{pay_base_url}/{payment_session_id}"
+                # FALLBACK: Use dashboard redirect page to handle checkout via SDK
+                payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"
                 
                 txn_id = db.create_transaction(
                     user_id=user_id,
@@ -174,8 +174,8 @@ class PaymentManager:
                 pay_response = Cashfree().PGPayOrder(x_api_version, pay_request)
             except Exception as pay_err:
                 print(f"DEBUG: Direct QR failed (Feature probably not enabled): {pay_err}")
-                # FALLBACK: Return standard session link as QR if seamless is disabled
-                qr_payload = f"{pay_base_url}/{payment_session_id}"
+                # FALLBACK: Use dashboard redirect page to handle checkout via SDK
+                qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"
                 print(f"DEBUG: Fallback QR Payload: {qr_payload}")
                 
                 # Create QR of the checkout link instead

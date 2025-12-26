@@ -56,6 +56,12 @@ def dashboard():
     analytics = db.get_time_based_analytics()
     return render_template('dashboard.html', stats=stats, analytics=analytics)
 
+@app.route('/pay/<session_id>')
+def pay(session_id):
+    """Bridge for Cashfree payment - opens checkout via SDK"""
+    env = config.CASHFREE_ENV.lower()
+    return render_template('pay.html', session_id=session_id, env=env)
+
 @app.route('/api/analytics')
 @admin_required
 def get_analytics():

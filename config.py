@@ -16,6 +16,9 @@ CASHFREE_APP_ID = os.getenv('CASHFREE_APP_ID')
 CASHFREE_SECRET_KEY = os.getenv('CASHFREE_SECRET_KEY')
 CASHFREE_ENV = os.getenv('CASHFREE_ENV', 'TEST')  # TEST or PRODUCTION
 
+# Dashboard Configuration
+DASHBOARD_URL = os.getenv('DASHBOARD_URL', 'http://localhost:5000')
+
 # Pricing Configuration
 SELL_RATE = float(os.getenv('SELL_RATE', 9.0))
 BUY_RATE = float(os.getenv('BUY_RATE', 15.0))
