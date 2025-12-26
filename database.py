@@ -648,5 +648,32 @@ class Database:
         finally:
             conn.close()
 
+    def get_sellers_awaiting_payment(self) -> List[Dict]:
+        """Get sellers who have sold Gmails but haven't been fully paid"""
+        conn = self.get_connection()
+        try:
+            # Get sellers with sold Gmails and calculate amount owed
+            query = '''
+                SELECT 
+                    s.user_id,
+                    u.username,
+                    u.full_name,
+                    COUNT(g.gmail_id) as sold_count,
+                    SUM(g.price) as amount_owed,
+                    MAX(g.sold_at) as last_sale_date,
+                    s.upi_qr_path
+                FROM sellers s
+                JOIN users u ON s.user_id = u.user_id
+                JOIN gmails g ON g.seller_id = s.seller_id
+                WHERE g.status = 'sold' AND g.is_paid_to_seller = 0
+                GROUP BY s.seller_id
+                ORDER BY last_sale_date DESC
+            '''
+            
+            rows = conn.execute(query).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
