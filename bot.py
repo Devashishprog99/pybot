@@ -624,7 +624,25 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 pass
         else:
             await query.answer("❌ No unpaid Gmails found for this seller.")
+    
+    # Gmail section pagination and navigation
+    elif data == "gmail_page_prev":
+        page = context.user_data.get('gmail_page', 0)
+        if page > 0:
+            context.user_data['gmail_page'] = page - 1
+        await admin_handler.show_pending_gmails(update, context)
+    elif data == "gmail_page_next":
+        page = context.user_data.get('gmail_page', 0)
+        context.user_data['gmail_page'] = page + 1
+        await admin_handler.show_pending_gmails(update, context)
+    elif data.startswith("seller_gmails_"):
+        user_id = int(data.replace("seller_gmails_", ""))
+        await admin_handler.show_seller_gmails(update, context, user_id)
+    elif data == "pending_batches":
+        await admin_handler.show_pending_batches(update, context)
+    
     elif data.startswith("approve_seller_"):
+
         seller_id = int(data.split('_')[2])
         await admin_handler.approve_seller(update, context, seller_id)
     elif data.startswith("reject_seller_"):

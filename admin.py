@@ -212,6 +212,130 @@ class AdminHandler:
     
     @staticmethod
     async def show_pending_gmails(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Show Gmail overview - list sellers with Gmail counts"""
+        query = update.callback_query
+        await query.answer()
+        
+        try:
+            # Get all sellers with their Gmail stats
+            sellers = db.get_all_sellers_with_stats()
+            
+            if not sellers or len(sellers) == 0:
+                await query.edit_message_text(
+                    "📧 **Gmail Overview**\n\n"
+                    "No sellers with Gmails yet.\n"
+                    "Gmails will appear here when sellers submit accounts.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")]]),
+                    parse_mode='Markdown'
+                )
+                return
+            
+            # Build seller list with pagination
+            page = context.user_data.get('gmail_page', 0)
+            per_page = 8
+            total_pages = (len(sellers) + per_page - 1) // per_page
+            start = page * per_page
+            end = min(start + per_page, len(sellers))
+            
+            message = f"📧 **Gmail Overview** (Page {page + 1}/{total_pages})\n\n"
+            message += "Select a seller to view their Gmails:\n\n"
+            
+            keyboard = []
+            for seller in sellers[start:end]:
+                username = seller.get('username', 'Unknown')
+                if username and username != 'Unknown':
+                    username = username.replace('_', '\\_')
+                pending = seller.get('pending_gmails', 0)
+                available = seller.get('available_gmails', 0)
+                sold = seller.get('sold_gmails', 0)
+                
+                btn_text = f"👤 {username} - P:{pending} A:{available} S:{sold}"
+                keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"seller_gmails_{seller['user_id']}")])
+            
+            # Pagination buttons
+            nav_row = []
+            if page > 0:
+                nav_row.append(InlineKeyboardButton("◀️ Prev", callback_data="gmail_page_prev"))
+            if page < total_pages - 1:
+                nav_row.append(InlineKeyboardButton("Next ▶️", callback_data="gmail_page_next"))
+            if nav_row:
+                keyboard.append(nav_row)
+            
+            # Pending batches button
+            keyboard.append([InlineKeyboardButton("📋 Pending Batches", callback_data="pending_batches")])
+            keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")])
+            
+            await query.edit_message_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            print(f"Error in show_pending_gmails: {e}")
+            await query.edit_message_text(
+                f"❌ Error loading Gmails: {str(e)}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")]])
+            )
+    
+    @staticmethod
+    async def show_seller_gmails(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: int):
+        """Show specific seller's Gmail details"""
+        query = update.callback_query
+        await query.answer()
+        
+        try:
+            seller = db.get_seller(user_id)
+            user = db.get_user(user_id)
+            
+            if not seller:
+                await query.answer("Seller not found!", show_alert=True)
+                return
+            
+            # Get Gmail batches for this seller
+            batches = db.get_seller_gmail_batches(seller['seller_id'])
+            
+            username = user.get('username', 'Unknown') if user else 'Unknown'
+            if username != 'Unknown':
+                username = username.replace('_', '\\_')
+            
+            message = f"📧 **{username}'s Gmails**\n\n"
+            
+            if not batches:
+                message += "No Gmail batches found."
+            else:
+                for batch in batches[:5]:  # Show max 5 batches
+                    status_emoji = {"pending": "⏳", "approved": "✅", "rejected": "❌"}.get(batch['status'], "❓")
+                    message += f"{status_emoji} Batch: `{batch['batch_id'][:15]}...`\n"
+                    message += f"   Count: {batch['count']} | Status: {batch['status']}\n\n"
+            
+            # Get sold gmails info
+            sold_gmails = db.get_sold_gmails_by_seller(seller['seller_id'])
+            if sold_gmails:
+                message += f"\n**Sold Gmails ({len(sold_gmails)}):**\n"
+                for gmail in sold_gmails[:3]:
+                    buyer_name = gmail.get('buyer_username', 'Unknown')
+                    if buyer_name and buyer_name != 'Unknown':
+                        buyer_name = buyer_name.replace('_', '\\_')
+                    message += f"• `{gmail['email'][:20]}...` → {buyer_name}\n"
+                if len(sold_gmails) > 3:
+                    message += f"  ...and {len(sold_gmails) - 3} more\n"
+            
+            keyboard = [[InlineKeyboardButton("⬅️ Back to Gmails", callback_data="admin_gmails")]]
+            
+            await query.edit_message_text(
+                message,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode='Markdown'
+            )
+        except Exception as e:
+            print(f"Error showing seller gmails: {e}")
+            await query.edit_message_text(
+                f"❌ Error: {str(e)}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_gmails")]])
+            )
+    
+    @staticmethod
+    async def show_pending_batches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Show pending Gmail batch approvals"""
         query = update.callback_query
         await query.answer()
@@ -221,9 +345,9 @@ class AdminHandler:
             
             if not batches or len(batches) == 0:
                 await query.edit_message_text(
-                    "📧 **No pending Gmail batches!**\n\n"
-                    "Gmail batches will appear here when sellers submit accounts for approval.",
-                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back to Admin", callback_data="admin_panel")]]),
+                    "📋 **No pending Gmail batches!**\n\n"
+                    "All batches have been processed.",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_gmails")]]),
                     parse_mode='Markdown'
                 )
                 return
@@ -233,11 +357,12 @@ class AdminHandler:
             
             await AdminHandler.display_batch_for_approval(query, batches[0], 0, len(batches))
         except Exception as e:
-            print(f"Error in show_pending_gmails: {e}")
+            print(f"Error in show_pending_batches: {e}")
             await query.edit_message_text(
-                f"❌ Error loading Gmail batches: {str(e)}\n\nPlease try again.",
-                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_panel")]])
+                f"❌ Error: {str(e)}",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="admin_gmails")]])
             )
+
     
     @staticmethod
     async def display_batch_for_approval(query, batch, index, total):

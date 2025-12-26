@@ -725,5 +725,46 @@ class Database:
         finally:
             conn.close()
 
+    def get_seller_gmail_batches(self, seller_id: int) -> List[Dict]:
+        """Get Gmail batches for a specific seller"""
+        conn = self.get_connection()
+        try:
+            query = '''
+                SELECT 
+                    batch_id,
+                    COUNT(*) as count,
+                    MIN(created_at) as created_at,
+                    status
+                FROM gmails
+                WHERE seller_id = ?
+                GROUP BY batch_id
+                ORDER BY created_at DESC
+            '''
+            rows = conn.execute(query, (seller_id,)).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_sold_gmails_by_seller(self, seller_id: int) -> List[Dict]:
+        """Get sold Gmails with buyer info for a seller"""
+        conn = self.get_connection()
+        try:
+            query = '''
+                SELECT 
+                    g.email,
+                    g.sold_at,
+                    u.username as buyer_username,
+                    u.user_id as buyer_id
+                FROM gmails g
+                LEFT JOIN users u ON g.buyer_id = u.user_id
+                WHERE g.seller_id = ? AND g.status = 'sold'
+                ORDER BY g.sold_at DESC
+            '''
+            rows = conn.execute(query, (seller_id,)).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
+
