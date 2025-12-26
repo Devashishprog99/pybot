@@ -202,36 +202,13 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     
     order_id = result['order_id']
     payment_link = result['payment_link']
-    raw_link = result.get('raw_link', payment_link) # Get raw provider link
     context.user_data['pending_payment'] = order_id
     
-    # 1. Generate QR Code
-    # Check if raw_link is a Base64 string (Cashfree native QR)
-    # Base64 strings are usually long and don't contain spaces.
-    import base64
-    
-    qr_bio = None
-    if raw_link and len(raw_link) > 500 and " " not in raw_link:
-        try:
-             # Decode Base64 to image
-             qr_data = base64.b64decode(raw_link)
-             qr_bio = io.BytesIO(qr_data)
-             qr_bio.seek(0)
-        except Exception as e:
-             logger.error(f"Failed to decode Base64 QR: {e}")
-    
-    # Fallback: Generate QR from string if not Base64 or decode failed
-    if not qr_bio:
-        qr_bio = generate_qr_image(raw_link)
-    
     message = (
-        f"💳 **Payment Initiated**\n"
-        f"👤 Paying to: **OTT4YOU**\n\n"
-        f"Amount: {format_currency(amount)}\n"
-        f"Order ID: `{order_id}`\n\n"
-        f"scan the QR code below to pay instantly.\n"
-        f"⏳ **This QR Code expires in 1:30 Minutes!**\n\n"
-        f"👇 **Other Ways:**"
+        f"💳 **Payment Ready**\n\n"
+        f"💰 Amount: {format_currency(amount)}\n"
+        f"🆔 Order ID: `{order_id}`\n\n"
+        f"👇 **Click below to pay securely:**"
     )
     
     try:
@@ -240,35 +217,22 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
             payment_link = f"https://{payment_link}"
 
         keyboard = [
-            [InlineKeyboardButton(f"📱 Pay {format_currency(amount)} Inside App", web_app=WebAppInfo(url=payment_link))],
-            # Removed Direct Button as requested
-            [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
+            [InlineKeyboardButton(f"💳 Pay {format_currency(amount)}", web_app=WebAppInfo(url=payment_link))],
+            [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
         ]
         
-        # Send Photo with QR
-        sent_msg = await query.message.reply_photo(
-            photo=qr_bio,
-            caption=message,
+        # Send payment message
+        sent_msg = await query.edit_message_text(
+            message,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
         
         # Monitor for payment success
-        # Pass qr_path explicitly if we saved it, but here we used BytesIO.
-        # However, monitor needs to handle message deletion.
         asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
-        
-        # Schedule live countdown and deletion
-        asyncio.create_task(run_qr_timer(context, query.message.chat_id, sent_msg.message_id, 90))
-        
-        # Delete the previous "menu" message to clean up chat
-        try:
-            await query.message.delete()
-        except:
-            pass
             
     except Exception as e:
-        logger.error(f"Failed to create payment QR: {e}")
+        logger.error(f"Failed to create payment: {e}")
         await query.edit_message_text(f"❌ Error initializing payment: {e}")
 
 def generate_qr_image(data):
