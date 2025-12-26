@@ -61,7 +61,8 @@ class PaymentManager:
             payment_session_id = order_response.data.payment_session_id
             
             # Determine the fastest/most reliable link
-            if not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
+            # Use Bridge only if URLs are set and USE_PAYMENT_BRIDGE is True
+            if not config.USE_PAYMENT_BRIDGE or not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
                 if config.CASHFREE_ENV.upper() == 'PRODUCTION':
                     payment_link = f"https://payments.cashfree.com/order/{payment_session_id}"
                 else:

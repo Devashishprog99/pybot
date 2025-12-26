@@ -18,6 +18,7 @@ CASHFREE_ENV = os.getenv('CASHFREE_ENV', 'TEST').strip().upper()  # TEST or PROD
 
 # Dashboard Configuration
 DASHBOARD_URL = os.getenv('DASHBOARD_URL', '').strip()
+USE_PAYMENT_BRIDGE = os.getenv('USE_PAYMENT_BRIDGE', 'TRUE').strip().upper() == 'TRUE'
 
 # Pricing Configuration
 SELL_RATE = float(os.getenv('SELL_RATE', 9.0))
