@@ -92,12 +92,12 @@ class PaymentManager:
                     env_tag = config.CASHFREE_ENV.upper()
                     payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 else:
-                    # Priority 3: Fallback to verified hashtag format (NO SLASH after #)
+                    # Priority 3: Fallback to official hashtag + slash format
                     if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                        payment_link = f"https://payments.cashfree.com/order/#{payment_session_id}"
+                        payment_link = f"https://payments.cashfree.com/order/#/{payment_session_id}"
                     else:
-                        # Sandbox has a specific path for the redirect page
-                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#{payment_session_id}"
+                        # Sandbox has a different specific path for the redirect page
+                        payment_link = f"https://sandbox.cashfree.com/pg/checkout/order/#/{payment_session_id}"
             
             LAST_GENERATED_LINK = payment_link
             print(f"DEBUG: Generated Payment Link ({config.CASHFREE_ENV}): {payment_link}")
