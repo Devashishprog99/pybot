@@ -3,7 +3,7 @@ Seller Module - Handle seller operations
 """
 from telegram import Update
 from telegram.ext import ContextTypes
-from mongodb import db
+from database import db
 from utils import (
     parse_gmail_list, generate_batch_id, format_currency,
     build_seller_wizard_keyboard, build_withdrawal_keyboard

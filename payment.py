@@ -111,8 +111,6 @@ class PaymentManager:
                     },
                     json={
                         "payment_session_id": payment_session_id,
-                    json={
-                        "payment_session_id": payment_session_id,
                         "payment_method": {
                             "upi": {
                                 "channel": "qrcode"

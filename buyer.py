@@ -8,7 +8,7 @@ from utils import (
     format_gmail_credentials, build_contact_keyboard
 )
 import config
-from mongodb import db
+from database import db
 
 class BuyerHandler:
     

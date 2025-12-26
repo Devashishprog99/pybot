@@ -1,9 +1,10 @@
 """
 Admin Module - Admin panel and operations
 """
+"""
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from mongodb import db
+from database import db
 from utils import (
     build_admin_keyboard, build_approval_keyboard, 
     build_admin_nav_keyboard, format_currency, format_datetime,

@@ -10,7 +10,7 @@ from telegram.ext import (
 import io
 import qrcode
 import config
-from mongodb import db
+from database import db
 from utils import (
     build_main_menu, welcome_message, help_message,
     build_wallet_keyboard, build_amount_keyboard, build_my_activity_keyboard,
