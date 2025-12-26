@@ -103,6 +103,10 @@ class AdminHandler:
             for seller in sellers_stats:
                 status_emoji = "⏳" if seller['status'] == 'pending' else "✅" if seller['status'] == 'approved' else "❌"
                 username = seller.get('username', 'Unknown')
+                # Escape underscores for Markdown
+                if username != 'Unknown':
+                    username = username.replace('_', '\\_')
+                    
                 user_id = seller.get('user_id', 0)
                 pending = seller.get('pending_gmails', 0)
                 available = seller.get('available_gmails', 0)
@@ -430,17 +434,23 @@ class AdminHandler:
         for user in users[:15]:
             status = "🚫 Banned" if user.get('is_banned') else "✅ Active"
             is_seller_data = db.get_seller(user['user_id'])
-            is_seller = "👨‍💼 Seller" if is_seller_data else "👤 Buyer"
+            is_seller = "💼 Seller" if is_seller_data else "👤 Buyer"
+            
+            # Escape underscores in username for Markdown
+            username = user.get('username', 'No Username')
+            if username != 'No Username':
+                username = username.replace('_', '\\_')
+            
             message += (
-                f"👤 `{user['user_id']}` | @{user.get('username', 'No Username')}\n"
+                f"👤 `{user['user_id']}` | {username}\n"
                 f"💰 Balance: {format_currency(user.get('wallet_balance', 0))}\n"
                 f"🎫 Status: {status} | {is_seller}\n\n"
             )
             
         if len(users) > 15:
-            message += f"_... and {len(users) - 15} more users._"
+            message += f"... and {len(users) - 15} more users.\n"
             
-        message += "\nTo manage a specific user, just forward a message from them or send their User ID."
+        message += "\nTo manage a specific user, forward their message or send User ID."
         
         await query.edit_message_text(
             message,
