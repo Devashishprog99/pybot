@@ -614,5 +614,39 @@ class Database:
         finally:
             conn.close()
 
+    def get_time_based_analytics(self) -> Dict:
+        """Get time-based transaction analytics for dashboard"""
+        from datetime import datetime, timedelta
+        conn = self.get_connection()
+        try:
+            now = datetime.now()
+            analytics = {}
+            
+            # Define time ranges
+            ranges = {
+                'daily': now - timedelta(days=1),
+                'weekly': now - timedelta(days=7),
+                'monthly': now - timedelta(days=30),
+                'yearly': now - timedelta(days=365)
+            }
+            
+            for label, start_date in ranges.items():
+                result = conn.execute('''
+                    SELECT 
+                        COALESCE(SUM(amount), 0) as total_amount,
+                        COUNT(*) as count
+                    FROM transactions
+                    WHERE status = 'success' AND created_at >= ?
+                ''', (start_date,)).fetchone()
+                
+                analytics[label] = {
+                    'total_amount': result['total_amount'] if result else 0,
+                    'count': result['count'] if result else 0
+                }
+                
+            return analytics
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
