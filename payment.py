@@ -52,7 +52,11 @@ class PaymentManager:
             
             # 1. Create Order with OrderMeta (required for payment_link generation)
             # Use a dummy return_url to trigger the generation of a native link
-            return_url = f"{config.DASHBOARD_URL.rstrip('/')}/" if config.DASHBOARD_URL else "https://t.me/BotFather"
+            dash_url = config.DASHBOARD_URL.rstrip('/')
+            if dash_url and not dash_url.startswith('http'):
+                dash_url = f"https://{dash_url}"
+            
+            return_url = f"{dash_url}/" if dash_url else "https://t.me/BotFather"
             
             order_meta = OrderMeta(
                 return_url=return_url
