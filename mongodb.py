@@ -117,7 +117,10 @@ class MongoDatabase:
     
     def get_seller(self, user_id: int) -> Optional[Dict]:
         """Get seller by user ID"""
-        return self.sellers.find_one({"user_id": user_id})
+        seller = self.sellers.find_one({"user_id": user_id})
+        if seller:
+            seller['seller_id'] = str(seller['_id'])
+        return seller
     
     def get_seller_by_id(self, seller_id) -> Optional[Dict]:
         """Get seller by seller ID"""
