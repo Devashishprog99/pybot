@@ -106,8 +106,7 @@ def build_wallet_keyboard() -> InlineKeyboardMarkup:
     """Build wallet keyboard"""
     keyboard = [
         [InlineKeyboardButton("➕ Add Money", callback_data="wallet_add")],
-        [InlineKeyboardButton("📜 Transaction History", callback_data="wallet_history")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")]
+        [InlineKeyboardButton("📜 Transaction History", callback_data="wallet_history")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -123,8 +122,7 @@ def build_amount_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("₹200", callback_data="amount_200"),
             InlineKeyboardButton("₹500", callback_data="amount_500")
         ],
-        [InlineKeyboardButton("✏️ Custom Amount", callback_data="amount_custom")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="wallet_main")]
+        [InlineKeyboardButton("✏️ Custom Amount", callback_data="amount_custom")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -153,9 +151,8 @@ def build_buy_keyboard(available: int) -> InlineKeyboardMarkup:
     if row:
         keyboard.append(row)
     
-    # Custom quantity and navigation
+    # Custom quantity only
     keyboard.append([InlineKeyboardButton("✏️ Custom Quantity", callback_data="buy_custom")])
-    keyboard.append([InlineKeyboardButton("⬅️ Back", callback_data="main_menu")])
     
     return InlineKeyboardMarkup(keyboard)
 
@@ -199,8 +196,7 @@ def build_my_activity_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("📦 My Purchases", callback_data="activity_purchases")],
         [InlineKeyboardButton("💵 My Sales", callback_data="activity_sales")],
-        [InlineKeyboardButton("💳 Withdrawals", callback_data="activity_withdrawals")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")]
+        [InlineKeyboardButton("💳 Withdrawals", callback_data="activity_withdrawals")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
