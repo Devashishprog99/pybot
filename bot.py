@@ -89,7 +89,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if context.user_data.get('pending_payment'):
                 order_id = context.user_data.pop('pending_payment')
                 await payment_manager.cancel_payment(order_id)
-                await update.message.reply_text("✅ Payment cancelled successfully!")
+                await update.message.reply_text(
+                    "✅ Payment cancelled successfully!",
+                    reply_markup=build_main_menu(admin_handler.is_admin(user_id))
+                )
             else:
                 await update.message.reply_text("ℹ️ No active payment to cancel.")
             return
@@ -281,6 +284,14 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
             message,
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
+        )
+        
+        # Switch to payment mode keyboard (only Cancel Payment button)
+        from utils import build_payment_mode_keyboard
+        await context.bot.send_message(
+            chat_id=user_id,
+            text="🔔 Payment mode active. Use 'Cancel Payment' button below to cancel.",
+            reply_markup=build_payment_mode_keyboard()
         )
         
         # Monitor for payment success
@@ -529,10 +540,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
         
-        # Send new message
+        # Send new message with restored keyboard
         await context.bot.send_message(
             chat_id=user_id,
-            text="✅ Payment cancelled successfully!"
+            text="✅ Payment cancelled successfully!",
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id))
         )
     
     # Buy callbacks
