@@ -64,9 +64,9 @@ class PaymentManager:
             # Use Bridge only if URLs are set and USE_PAYMENT_BRIDGE is True
             if not config.USE_PAYMENT_BRIDGE or not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
                 if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                    payment_link = f"https://payments.cashfree.com/order/{payment_session_id}"
+                    payment_link = f"https://payments.cashfree.com/order/#{payment_session_id}"
                 else:
-                    payment_link = f"https://payments-test.cashfree.com/order/{payment_session_id}"
+                    payment_link = f"https://payments-test.cashfree.com/order/#{payment_session_id}"
             else:
                 # Use the professional bridge with explicit environment override
                 env_tag = config.CASHFREE_ENV.upper()
@@ -142,7 +142,7 @@ class PaymentManager:
                 env_tag = config.CASHFREE_ENV.upper()
                 if "localhost" in config.DASHBOARD_URL:
                      env_sub = "cashfree" if env_tag == "PRODUCTION" else "test.cashfree"
-                     payment_link = f"https://payments.{env_sub}.com/order/{payment_session_id}"
+                     payment_link = f"https://payments.{env_sub}.com/order/#{payment_session_id}"
                 else:
                      payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 
@@ -207,7 +207,7 @@ class PaymentManager:
             except Exception as pay_err:
                 # FALLBACK: QR of environment-aware Bridge Link
                 env_tag = config.CASHFREE_ENV.upper()
-                qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}" if "localhost" not in config.DASHBOARD_URL else f"https://payments.{'cashfree' if env_tag == 'PRODUCTION' else 'test.cashfree'}.com/order/{payment_session_id}"
+                qr_payload = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}" if "localhost" not in config.DASHBOARD_URL else f"https://payments.{'cashfree' if env_tag == 'PRODUCTION' else 'test.cashfree'}.com/order/#{payment_session_id}"
                 qr = qrcode.QRCode(version=1, box_size=10, border=5)
                 qr.add_data(qr_payload)
                 qr.make(fit=True)
