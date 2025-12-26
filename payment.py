@@ -48,7 +48,7 @@ class PaymentManager:
                 order_meta=OrderMeta(
                     notify_url=f"https://your-domain.com/webhook" # This should be your actual webhook
                 ),
-                order_expiry_time=(datetime.utcnow() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
+                order_expiry_time=(datetime.utcnow() + timedelta(minutes=16)).strftime('%Y-%m-%dT%H:%M:%SZ')
             )
             
             x_api_version = "2023-08-01"
@@ -125,7 +125,7 @@ class PaymentManager:
                     'success': True,
                     'order_id': order_id,
                     'qr_path': qr_path,
-                    'expiry': 300, # 5 minutes
+                    'expiry': config.PAYMENT_TIMEOUT, # 15 minutes
                     'txn_id': txn_id,
                     'amount': amount
                 }

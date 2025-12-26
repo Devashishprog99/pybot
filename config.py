@@ -27,7 +27,7 @@ MIN_WALLET_ADD = int(os.getenv('MIN_WALLET_ADD', 15))
 MAX_WALLET_ADD = int(os.getenv('MAX_WALLET_ADD', 500))
 
 # Payment Timer (in seconds)
-PAYMENT_TIMEOUT = int(os.getenv('PAYMENT_TIMEOUT', 300))
+PAYMENT_TIMEOUT = int(os.getenv('PAYMENT_TIMEOUT', 900))
 
 # Database Configuration - MongoDB
 MONGODB_URI = os.getenv('MONGODB_URI')

@@ -199,7 +199,7 @@ async def process_amount_selection(update: Update, context: ContextTypes.DEFAULT
     message = (
         f"💳 **Pay via UPI QR**\n\n"
         f"Amount: {format_currency(amount)}\n"
-        f"⏱️ Expires in: 5:00\n\n"
+        f"⏱️ Expires in: 15:00\n\n"
         "1. Scan the QR code below\n"
         "2. Complete the payment in your UPI app\n"
         "3. Wait here for confirmation\n\n"
