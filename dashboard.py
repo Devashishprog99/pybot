@@ -109,6 +109,9 @@ def close_webapp():
     </body>
     </html>
     """
+
+@app.route('/api/users')
+@admin_required
 def get_users_api():
     """Get all users with statistics"""
     users = db.get_users_with_stats()

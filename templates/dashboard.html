@@ -329,6 +329,24 @@
             </div>
         </div>
 
+        <!-- GMAILS SECTION -->
+        <div id="gmails" class="section">
+            <div class="table-container">
+                <table id="gmails-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Seller ID</th>
+                            <th>Buyer ID</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- TRANSACTIONS SECTION -->
         <div id="transactions" class="section">
             <div class="table-container">
@@ -377,6 +395,7 @@
 
             if (id === 'users') loadUsers();
             if (id === 'sellers') loadSellers();
+            if (id === 'gmails') loadGmails();
             if (id === 'transactions') loadTransactions();
             if (id === 'support') loadSupport();
         }
@@ -412,6 +431,30 @@
                     <td><span class="badge ${s.status === 'approved' ? 'badge-success' : 'badge-pending'}">${s.status}</span></td>
                 </tr>
             `).join('') || '<tr><td colspan="6" style="text-align:center">No sellers found</td></tr>';
+        }
+
+        async function loadGmails() {
+            const resp = await fetch('/api/gmails');
+            const data = await resp.json();
+            const tbody = document.querySelector('#gmails-table tbody');
+            // Assuming table id is gmails-table. Let's check headers.
+            // Wait, I need to check if #gmails-table exists in HTML. I viewed lines 300-481.
+            // I saw #users-table, #sellers-table, #transactions-table, #support-table.
+            // I did NOT see #gmails-table in the viewed chunks!!!
+            // I must ensure the HTML structure also exists.
+
+            // If the table doesn't exist in HTML, this JS will fail.
+            // But let's add the JS first, then I'll check/add the HTML part if missing.
+
+            tbody.innerHTML = data.map(g => `
+                <tr>
+                    <td>${new Date(g.created_at).toLocaleDateString()}</td>
+                    <td>${g.email}</td>
+                    <td><span class="badge ${g.status === 'available' ? 'badge-success' : (g.status === 'sold' ? 'badge-pending' : 'badge-pending')}">${g.status}</span></td>
+                    <td>${g.seller_id}</td>
+                    <td>${g.buyer_id || '-'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center">No Gmails found</td></tr>';
         }
 
         async function loadTransactions() {
