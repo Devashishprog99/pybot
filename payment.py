@@ -20,7 +20,7 @@ from utils import generate_order_id, format_currency
 # Configure Cashfree
 Cashfree.XClientId = config.CASHFREE_APP_ID
 Cashfree.XClientSecret = config.CASHFREE_SECRET_KEY
-Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV == "PRODUCTION" else Cashfree.SANDBOX
+Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV.upper() == "PRODUCTION" else Cashfree.SANDBOX
 
 class PaymentManager:
     
