@@ -84,6 +84,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode='Markdown'
             )
             return
+        elif text == "🎫 Create Ticket":
+            context.user_data['ticket_step'] = 1
+            await update.message.reply_text(
+                "🎫 **Create Support Ticket**\n\n"
+                "Please enter the **subject** of your issue:\n"
+                "(e.g., 'Payment Issue', 'Gmail Problem', 'Account Help')",
+                parse_mode='Markdown'
+            )
+            return
+
         elif text == "❌ Cancel Payment":
             # Cancel any pending payment
             if context.user_data.get('pending_payment'):
@@ -137,6 +147,49 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await update.message.reply_text("❌ Failed to send message. Please try again.")
         context.user_data.pop('awaiting_support_message', None)
+        return
+
+    # Support ticket creation flow
+    ticket_step = context.user_data.get('ticket_step')
+    if ticket_step == 1:
+        # Got subject, ask for message
+        context.user_data['ticket_subject'] = text
+        context.user_data['ticket_step'] = 2
+        await update.message.reply_text(
+            f"📝 **Subject:** {text}\n\n"
+            "Now please describe your issue in detail:",
+            parse_mode='Markdown'
+        )
+        return
+    elif ticket_step == 2:
+        # Got message, create ticket
+        subject = context.user_data.pop('ticket_subject', 'No Subject')
+        context.user_data.pop('ticket_step', None)
+        
+        ticket_id = db.create_support_ticket(user_id, subject, text)
+        
+        await update.message.reply_text(
+            f"✅ **Ticket Created!**\n\n"
+            f"🎫 Ticket ID: #{ticket_id}\n"
+            f"📋 Subject: {subject}\n\n"
+            "Our team will review your ticket and respond soon.\n"
+            "Thank you for your patience!",
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
+            parse_mode='Markdown'
+        )
+        
+        # Notify admins
+        for admin_id in config.ADMIN_IDS:
+            try:
+                await context.bot.send_message(
+                    admin_id,
+                    f"🎫 **New Support Ticket #{ticket_id}**\n\n"
+                    f"👤 User: `{user_id}`\n"
+                    f"📋 Subject: {subject}\n"
+                    f"💬 Message: {text[:200]}...",
+                    parse_mode='Markdown'
+                )
+            except: pass
         return
 
     # User ID detection for admins (forwarded messages or numeric IDs)

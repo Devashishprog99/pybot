@@ -765,6 +765,93 @@ class Database:
         finally:
             conn.close()
 
+    # ==================== SUPPORT TICKETS ====================
+    
+    def ensure_tickets_table(self):
+        """Create support tickets table if not exists"""
+        conn = self.get_connection()
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS support_tickets (
+                    ticket_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    subject TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    status TEXT DEFAULT 'open',
+                    admin_reply TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id)
+                )
+            ''')
+            conn.commit()
+        finally:
+            conn.close()
+
+    def create_support_ticket(self, user_id: int, subject: str, message: str) -> int:
+        """Create a new support ticket"""
+        self.ensure_tickets_table()
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute('''
+                INSERT INTO support_tickets (user_id, subject, message)
+                VALUES (?, ?, ?)
+            ''', (user_id, subject, message))
+            conn.commit()
+            return cursor.lastrowid
+        finally:
+            conn.close()
+
+    def get_all_tickets(self, status: str = None) -> List[Dict]:
+        """Get all support tickets, optionally filtered by status"""
+        self.ensure_tickets_table()
+        conn = self.get_connection()
+        try:
+            if status:
+                query = '''
+                    SELECT t.*, u.username 
+                    FROM support_tickets t
+                    LEFT JOIN users u ON t.user_id = u.user_id
+                    WHERE t.status = ?
+                    ORDER BY t.created_at DESC
+                '''
+                rows = conn.execute(query, (status,)).fetchall()
+            else:
+                query = '''
+                    SELECT t.*, u.username 
+                    FROM support_tickets t
+                    LEFT JOIN users u ON t.user_id = u.user_id
+                    ORDER BY t.created_at DESC
+                '''
+                rows = conn.execute(query).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def update_ticket_status(self, ticket_id: int, status: str, admin_reply: str = None) -> bool:
+        """Update ticket status and optionally add admin reply"""
+        conn = self.get_connection()
+        try:
+            if admin_reply:
+                conn.execute('''
+                    UPDATE support_tickets 
+                    SET status = ?, admin_reply = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE ticket_id = ?
+                ''', (status, admin_reply, ticket_id))
+            else:
+                conn.execute('''
+                    UPDATE support_tickets 
+                    SET status = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE ticket_id = ?
+                ''', (status, ticket_id))
+            conn.commit()
+            return True
+        except:
+            return False
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
+
 

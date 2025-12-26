@@ -87,13 +87,15 @@ def build_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
     keyboard = [
         ['💰 Wallet', '🛒 Buy Gmails'],
         ['📤 Sell Gmails', '📊 My Activity'],
-        ['ℹ️ Help', '⬅️ Back']
+        ['🎫 Create Ticket', 'ℹ️ Help'],
+        ['⬅️ Back']
     ]
     
     if is_admin:
         keyboard.append(['⚙️ Admin Panel'])
     
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
 
 def build_payment_mode_keyboard() -> ReplyKeyboardMarkup:
     """Build keyboard for active payment - only shows cancel"""

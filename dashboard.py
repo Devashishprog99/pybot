@@ -158,6 +158,48 @@ def mark_payment_web(user_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ==================== SUPPORT DESK ====================
+
+@app.route('/admin/support')
+@admin_required
+def admin_support():
+    """View all support tickets"""
+    try:
+        status_filter = request.args.get('status', None)
+        tickets = db.get_all_tickets(status_filter)
+        return render_template('admin_support.html', tickets=tickets, current_status=status_filter)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading tickets</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/support/<int:ticket_id>/reply', methods=['POST'])
+@admin_required
+def reply_ticket(ticket_id):
+    """Reply to a support ticket"""
+    try:
+        data = request.get_json()
+        reply = data.get('reply', '')
+        status = data.get('status', 'resolved')
+        
+        db.update_ticket_status(ticket_id, status, reply)
+        return jsonify({'success': True, 'message': 'Reply sent successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== INVENTORY ====================
+
+@app.route('/admin/inventory')
+@admin_required
+def admin_inventory():
+    """View Gmail inventory stats"""
+    try:
+        stats = db.get_stats()
+        sellers = db.get_all_sellers_with_stats()
+        return render_template('admin_inventory.html', stats=stats, sellers=sellers)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading inventory</h3><p>{str(e)}</p>", 500
+
 @app.route('/pay/<session_id>')
 @app.route('/pay/<env_override>/<session_id>')
 def pay(session_id, env_override=None):
