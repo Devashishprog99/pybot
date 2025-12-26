@@ -230,7 +230,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         f"Amount: {format_currency(amount)}\n"
         f"Order ID: `{order_id}`\n\n"
         f"scan the QR code below to pay instantly.\n"
-        f"⏳ **This QR Code expires in 1 Minute!**\n\n"
+        f"⏳ **This QR Code expires in 1:30 Minutes!**\n\n"
         f"👇 **Other Ways:**"
     )
     
@@ -259,7 +259,7 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
         
         # Schedule live countdown and deletion
-        asyncio.create_task(run_qr_timer(context, query.message.chat_id, sent_msg.message_id, 60))
+        asyncio.create_task(run_qr_timer(context, query.message.chat_id, sent_msg.message_id, 90))
         
         # Delete the previous "menu" message to clean up chat
         try:
