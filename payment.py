@@ -50,12 +50,20 @@ class PaymentManager:
                 customer_phone=user_phone
             )
             
-            # 1. Create Order
+            # 1. Create Order with OrderMeta (required for payment_link generation)
+            # Use a dummy return_url to trigger the generation of a native link
+            return_url = f"{config.DASHBOARD_URL.rstrip('/')}/" if config.DASHBOARD_URL else "https://t.me/BotFather"
+            
+            order_meta = OrderMeta(
+                return_url=return_url
+            )
+            
             order_request = CreateOrderRequest(
                 order_amount=amount,
                 order_currency="INR",
                 order_id=order_id,
                 customer_details=customer,
+                order_meta=order_meta,
                 order_expiry_time=(datetime.utcnow() + timedelta(minutes=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
             )
             
