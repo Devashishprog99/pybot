@@ -111,37 +111,53 @@
 
     <script>
         const envMode = "{{ env }}".toLowerCase() === "production" ? "production" : "sandbox";
+        const sessionId = "{{ session_id }}".trim();
 
-        try {
-            const cashfree = Cashfree({
-                mode: envMode
-            });
+        console.log(`Initializing Cashfree in ${envMode} mode for session ${sessionId.substring(0, 8)}...`);
 
-            const checkoutOptions = {
-                paymentSessionId: "{{ session_id }}",
-                redirectTarget: "_self",
-            };
-
-            // Delay execution slightly to ensure SDK is fully ready
-            setTimeout(() => {
-                cashfree.checkout(checkoutOptions).then((result) => {
-                    if (result.error) {
-                        showError(result.error.message);
-                    }
-                }).catch(err => {
-                    showError("Checkout failed to launch.");
+        if (!sessionId || sessionId.includes("{")) {
+            showError("Invalid Session ID. The link might be broken.");
+        } else {
+            try {
+                const cashfree = Cashfree({
+                    mode: envMode
                 });
-            }, 500);
 
-        } catch (e) {
-            showError("Could not connect to Payment Provider.");
-            console.error(e);
+                const checkoutOptions = {
+                    paymentSessionId: sessionId,
+                    redirectTarget: "_self",
+                };
+
+                // Delay execution slightly to ensure SDK is fully ready
+                setTimeout(() => {
+                    cashfree.checkout(checkoutOptions).then((result) => {
+                        if (result.error) {
+                            console.error("Cashfree SDK Error:", result.error);
+                            showError(`${result.error.message} (Env: ${envMode.toUpperCase()})`);
+                        }
+                    }).catch(err => {
+                        showError("Checkout failed to launch. Please check your internet connection.");
+                    });
+                }, 800);
+
+            } catch (e) {
+                showError("Could not connect to Payment Provider. (SDK Error)");
+                console.error(e);
+            }
         }
 
         function showError(msg) {
             document.getElementById('loading-ui').style.display = 'none';
-            document.getElementById('error-container').style.display = 'block';
+            const container = document.getElementById('error-container');
+            container.style.display = 'block';
             document.getElementById('error-msg').innerText = msg;
+
+            // If it's a session error, highlight the environment mismatch possibility
+            if (msg.toLowerCase().includes("session") || msg.toLowerCase().includes("invalid")) {
+                const sub = container.querySelector('.sub-message');
+                sub.innerHTML = `<strong>Possible Fix:</strong> Ensure your Bot and Dashboard are BOTH set to the same environment (TEST or PRODUCTION) in Railway settings.`;
+                sub.style.color = "#fca5a5";
+            }
         }
     </script>
 </body>

@@ -49,7 +49,7 @@ class PaymentManager:
                 order_currency="INR",
                 order_id=order_id,
                 customer_details=customer,
-                order_expiry_time=(datetime.utcnow() + timedelta(minutes=16)).strftime('%Y-%m-%dT%H:%M:%SZ')
+                order_expiry_time=(datetime.utcnow() + timedelta(minutes=30)).strftime('%Y-%m-%dT%H:%M:%SZ')
             )
             
             x_api_version = "2023-08-01"
@@ -62,8 +62,10 @@ class PaymentManager:
             
             # Determine the fastest/most reliable link
             if not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
-                env_tag = "api" if config.CASHFREE_ENV.upper() == 'PRODUCTION' else "sandbox"
-                payment_link = f"https://payments.{env_tag}.cashfree.com/order/#{payment_session_id}"
+                if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                    payment_link = f"https://payments.cashfree.com/order/{payment_session_id}"
+                else:
+                    payment_link = f"https://payments-test.cashfree.com/order/{payment_session_id}"
             else:
                 # Use the professional bridge
                 payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"

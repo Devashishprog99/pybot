@@ -12,12 +12,12 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 ADMIN_IDS = [int(uid.strip()) for uid in os.getenv('ADMIN_IDS', '').split(',') if uid.strip()]
 
 # Cashfree Configuration
-CASHFREE_APP_ID = os.getenv('CASHFREE_APP_ID')
-CASHFREE_SECRET_KEY = os.getenv('CASHFREE_SECRET_KEY')
-CASHFREE_ENV = os.getenv('CASHFREE_ENV', 'TEST')  # TEST or PRODUCTION
+CASHFREE_APP_ID = os.getenv('CASHFREE_APP_ID', '').strip()
+CASHFREE_SECRET_KEY = os.getenv('CASHFREE_SECRET_KEY', '').strip()
+CASHFREE_ENV = os.getenv('CASHFREE_ENV', 'TEST').strip().upper()  # TEST or PRODUCTION
 
 # Dashboard Configuration
-DASHBOARD_URL = os.getenv('DASHBOARD_URL', 'http://localhost:5000')
+DASHBOARD_URL = os.getenv('DASHBOARD_URL', '').strip()
 
 # Pricing Configuration
 SELL_RATE = float(os.getenv('SELL_RATE', 9.0))
