@@ -25,16 +25,23 @@ Cashfree.XClientId = config.CASHFREE_APP_ID
 Cashfree.XClientSecret = config.CASHFREE_SECRET_KEY
 Cashfree.XEnvironment = Cashfree.PRODUCTION if config.CASHFREE_ENV.upper() == "PRODUCTION" else Cashfree.SANDBOX
 
+# Global to store last API response for diagnostic /logs command
+LAST_API_RESPONSE = "No API calls made yet."
+
 class PaymentManager:
     
     @staticmethod
+    def get_last_response():
+        return LAST_API_RESPONSE
+
+    @staticmethod
     async def create_payment_order(user_id: int, amount: float) -> dict:
         """Create a standard Cashfree order and return the bridge link"""
+        global LAST_API_RESPONSE
         try:
             order_id = generate_order_id()
             
             # Create customer details with valid 10-digit phone
-            # Generate 10-digit phone number from user_id if not provided
             phone_suffix = str(user_id)[-9:].zfill(9)
             user_phone = f"9{phone_suffix}"
             
@@ -55,23 +62,26 @@ class PaymentManager:
             x_api_version = "2023-08-01"
             order_response = Cashfree().PGCreateOrder(x_api_version, order_request)
             
+            # Save for diagnostics
+            LAST_API_RESPONSE = f"Status: {order_response.status_code if hasattr(order_response, 'status_code') else 'Unknown'}\nData: {order_response.data if order_response else 'None'}"
+
             if not order_response or not order_response.data:
                 return {'success': False, 'error': 'Failed to create order'}
                 
             payment_session_id = order_response.data.payment_session_id
             
-            # Determine the fastest/most reliable link
-            # Use Bridge only if URLs are set and USE_PAYMENT_BRIDGE is True
-            if not config.USE_PAYMENT_BRIDGE or not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
-                # OFFICIAL HOSTED CHECKOUT URL (No hashtag for sessions)
-                if config.CASHFREE_ENV.upper() == 'PRODUCTION':
-                    payment_link = f"https://payments.cashfree.com/check-out/{payment_session_id}"
+            # Priority 1: Use the native payment_link from response if available
+            payment_link = getattr(order_response.data, 'payment_link', None)
+            
+            if not payment_link:
+                # Priority 2: Use Bridge only if configured
+                if config.USE_PAYMENT_BRIDGE and config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL:
+                    env_tag = config.CASHFREE_ENV.upper()
+                    payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
                 else:
-                    payment_link = f"https://payments-test.cashfree.com/check-out/{payment_session_id}"
-            else:
-                # Use the professional bridge with explicit environment override
-                env_tag = config.CASHFREE_ENV.upper()
-                payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{env_tag}/{payment_session_id}"
+                    # Priority 3: Fallback to standard URL construction
+                    base = "https://payments.cashfree.com" if config.CASHFREE_ENV.upper() == 'PRODUCTION' else "https://payments-test.cashfree.com"
+                    payment_link = f"{base}/order/{payment_session_id}"
             
             print(f"DEBUG: Generated Payment Link ({config.CASHFREE_ENV}): {payment_link}")
             

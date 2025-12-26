@@ -533,6 +533,19 @@ async def check_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(message, parse_mode='Markdown')
 
+async def logs_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """View last payment API response for debugging"""
+    user_id = update.effective_user.id
+    if not admin_handler.is_admin(user_id):
+        return
+        
+    last_resp = payment_manager.get_last_response()
+    
+    await update.message.reply_text(
+        f"📋 **Last Payment API Response**\n\n```\n{last_resp}\n```",
+        parse_mode='Markdown'
+    )
+
 def main():
     """Start the bot"""
     try:
@@ -545,6 +558,7 @@ def main():
         # Add handlers
         app.add_handler(CommandHandler("start", start))
         app.add_handler(CommandHandler("check", check_command))
+        app.add_handler(CommandHandler("logs", logs_command))
         app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text(help_message(), parse_mode='Markdown')))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
