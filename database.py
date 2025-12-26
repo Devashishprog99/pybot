@@ -649,50 +649,53 @@ class Database:
             conn.close()
 
     def get_sellers_awaiting_payment(self) -> List[Dict]:
-        """Get sellers who have sold Gmails but haven't been fully paid"""
+        """Get sellers who have sold Gmails"""
+        import config
         conn = self.get_connection()
         try:
-            # Get sellers with sold Gmails and calculate amount owed
+            # Get sellers with sold Gmails
             query = '''
                 SELECT 
                     s.user_id,
                     u.username,
                     u.full_name,
                     COUNT(g.gmail_id) as sold_count,
-                    SUM(g.price) as amount_owed,
                     MAX(g.sold_at) as last_sale_date,
                     s.upi_qr_path
                 FROM sellers s
                 JOIN users u ON s.user_id = u.user_id
                 JOIN gmails g ON g.seller_id = s.seller_id
-                WHERE g.status = 'sold' AND g.is_paid_to_seller = 0
+                WHERE g.status = 'sold'
                 GROUP BY s.seller_id
                 ORDER BY last_sale_date DESC
             '''
             
             rows = conn.execute(query).fetchall()
-            return [dict(row) for row in rows]
+            result = []
+            for row in rows:
+                data = dict(row)
+                data['amount_owed'] = data['sold_count'] * config.SELL_RATE
+                result.append(data)
+            return result
         finally:
             conn.close()
 
+
     def mark_seller_gmails_as_paid(self, user_id: int) -> int:
-        """Mark all sold Gmails from a seller as paid"""
+        """Count sold Gmails from a seller (no update needed without is_paid column)"""
         conn = self.get_connection()
         try:
-            # Get seller_id from user_id
             seller = self.get_seller(user_id)
             if not seller:
                 return 0
             
-            # Update all sold but unpaid Gmails
+            # Just count sold Gmails for this seller
             result = conn.execute('''
-                UPDATE gmails 
-                SET is_paid_to_seller = 1
-                WHERE seller_id = ? AND status = 'sold' AND is_paid_to_seller = 0
-            ''', (seller['seller_id'],))
+                SELECT COUNT(*) as count FROM gmails 
+                WHERE seller_id = ? AND status = 'sold'
+            ''', (seller['seller_id'],)).fetchone()
             
-            conn.commit()
-            return result.rowcount
+            return result['count'] if result else 0
         finally:
             conn.close()
 
@@ -704,20 +707,17 @@ class Database:
                 SELECT 
                     g.gmail_id,
                     g.email,
-                    g.price,
                     g.sold_at,
                     buyer.user_id as buyer_id,
                     buyer.username as buyer_username,
-                    seller_user.username as seller_username,
-                    t.transaction_id,
-                    t.amount
+                    seller_user.username as seller_username
                 FROM gmails g
                 LEFT JOIN users buyer ON g.buyer_id = buyer.user_id
                 LEFT JOIN sellers s ON g.seller_id = s.seller_id
                 LEFT JOIN users seller_user ON s.user_id = seller_user.user_id
-                LEFT JOIN transactions t ON t.user_id = buyer.user_id AND t.type = 'purchase'
                 WHERE g.status = 'sold'
                 ORDER BY g.sold_at DESC
+
             '''
             
             rows = conn.execute(query).fetchall()
