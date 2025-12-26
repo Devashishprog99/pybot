@@ -16,7 +16,7 @@ from mongodb import db
 from utils import (
     build_main_menu, welcome_message, help_message,
     build_wallet_keyboard, build_amount_keyboard, build_my_activity_keyboard,
-    format_currency, format_countdown, build_contact_keyboard, build_payment_method_keyboard
+    format_currency, format_countdown, build_contact_keyboard
 )
 from payment import payment_manager
 from seller import seller_handler
