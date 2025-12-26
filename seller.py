@@ -109,19 +109,48 @@ class SellerHandler:
             )
             return
         
-        # Save to context
-        context.user_data['gmails'] = gmails
-        context.user_data['seller_step'] = 3
+        # Validate Gmail credentials
+        from utils import check_gmail_credentials
+        await update.message.reply_text("🔍 **Validating credentials...**\n\nPlease wait...", parse_mode='Markdown')
         
-        # Calculate earnings
-        total_earnings = len(gmails) * config.SELL_RATE
+        valid_gmails = []
+        invalid_count = 0
         
+        for email, password in gmails:
+            if check_gmail_credentials(email, password):
+                valid_gmails.append((email, password))
+            else:
+                invalid_count += 1
+        
+        # Check if we have any valid accounts
+        if not valid_gmails:
+            await update.message.reply_text(
+                "❌ **Validation Failed!**\n\n"
+                f"⚠️ All {len(gmails)} accounts have invalid format.\n\n"
+                "Please ensure:\n"
+                "• Email ends with @gmail.com\n"
+                "• Password is at least 4 characters\n"
+                "• Format is email:password\n\n"
+                "Try again with valid accounts.",
+                parse_mode='Markdown'
+            )
+            return
+        
+        # Store validated gmails and batch_id in context for later
+        batch_id = generate_batch_id()
+        context.user_data['validated_gmails'] = valid_gmails
+        context.user_data['batch_id'] = batch_id
+        context.user_data['validation_msg'] = f"\n\n✅ Valid: {len(valid_gmails)}" + (f"\n❌ Invalid: {invalid_count} (rejected)" if invalid_count > 0 else "")
+        
+        # Now ask for UPI QR (final step)
+        context.user_data['seller_step'] = 3  # Step 3: UPI QR upload
         await update.message.reply_text(
-            "**Step 3/3:** Review Your Submission\n\n"
-            f"📧 **Gmail Accounts:** {len(gmails)}\n"
-            f"💰 **Potential Earnings:** {format_currency(total_earnings)}\n\n"
-            "✅ Click Submit to send for admin approval.",
-            reply_markup=build_seller_wizard_keyboard(3),
+            f"✅ **{len(valid_gmails)} Gmails Validated!**\n\n"
+            f"🆔 Batch ID: `{batch_id}`\n"
+            f"{context.user_data['validation_msg']}\n\n"
+            "**Final Step:** Upload your UPI QR code\n"
+            "This will be used to pay you for your sales.\n\n"
+            "📸 Send the QR code image now:",
             parse_mode='Markdown'
         )
     
