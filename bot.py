@@ -211,20 +211,34 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
         f"• **Browser**: Opens in Chrome/Safari (Better for some UPI apps)."
     )
     
-    keyboard = [
-        [InlineKeyboardButton("📱 Pay Inside App", web_app=WebAppInfo(url=payment_link))],
-        [InlineKeyboardButton("🌐 Pay in Browser", url=payment_link)],
-        [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
-    ]
-    
-    sent_msg = await query.edit_message_text(
-        message,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode='Markdown'
-    )
-    
-    # Monitor for payment success
-    asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
+    try:
+        # Ensure URL has protocol for WebAppInfo
+        if not payment_link.startswith('http'):
+            payment_link = f"https://{payment_link}"
+
+        if not payment_link.startswith('https'):
+             print(f"ERROR: Payment link is not HTTPS: {payment_link}")
+             await query.edit_message_text("❌ Configuration Error: Payment link must be HTTPS.")
+             return
+
+        keyboard = [
+            [InlineKeyboardButton("📱 Pay Inside App", web_app=WebAppInfo(url=payment_link))],
+            [InlineKeyboardButton("🌐 Pay in Browser", url=payment_link)],
+            [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
+        ]
+        
+        sent_msg = await query.edit_message_text(
+            message,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode='Markdown'
+        )
+        
+        # Monitor for payment success
+        asyncio.create_task(monitor_payment(context, user_id, order_id, sent_msg.message_id))
+        
+    except Exception as e:
+        logger.error(f"Failed to create payment keyboard: {e}")
+        await query.edit_message_text(f"❌ Error initializing payment buttons: {e}")
 
 async def monitor_payment(context: ContextTypes.DEFAULT_TYPE, user_id: int, order_id: str, message_id: int, qr_path: str = None):
     """Monitor payment status and update message"""
@@ -495,10 +509,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle errors"""
     logger.error(f"Update {update} caused error {context.error}")
+    import traceback
+    traceback.print_exc()
     
     if update and update.effective_message:
         await update.effective_message.reply_text(
-            "❌ An error occurred. Please try again later."
+            f"❌ An error occurred: {context.error}"
         )
 
 # ==================== MAIN ====================
