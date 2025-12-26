@@ -27,40 +27,28 @@ class SellerHandler:
         # Check if already a seller
         seller = await SellerHandler.check_seller_status(user_id)
         
-        if seller:
-            if seller['status'] == 'pending':
-                await update.message.reply_text(
-                    "⏳ Your seller application is pending admin approval.\n"
-                    "Please wait for approval before submitting Gmails."
-                )
-                return
-            elif seller['status'] == 'approved':
-                # Go to Gmail submission
-                context.user_data['seller_step'] = 2
-                await update.message.reply_text(
-                    "📧 **Submit Your Gmail Accounts**\n\n"
-                    "⚠️ **IMPORTANT REQUIREMENTS:**\n"
-                    "**• GMAILS MUST NOT HAVE PHONE NUMBER ADDED**\n"
-                    "**• MUST NOT HAVE 2-STEP VERIFICATION**\n"
-                    "**• MUST NOT HAVE ANY RECOVERY EMAIL/PHONE**\n"
-                    "**• MUST BE FRESH AND CLEAN ACCOUNTS ONLY**\n\n"
-                    f"Format: `email:password` (one per line)\n"
-                    f"Minimum: {config.MIN_SELL_QUANTITY} Gmails\n"
-                    f"Rate: {format_currency(config.SELL_RATE)} per Gmail\n\n"
-                    "Send your Gmail list now:",
-                    parse_mode='Markdown'
-                )
-                return
+        if not seller:
+            # Auto-register as approved seller
+            success = db.create_seller(user_id, upi_qr_path="pending")
+            if success:
+                # Auto-approve the seller immediately
+                seller_record = db.get_seller(user_id)
+                if seller_record:
+                    db.approve_seller(seller_record['seller_id'], user_id, approved=True)
         
-        # Start new seller registration
-        context.user_data['seller_step'] = 1
+        # Go directly to Gmail submission
+        context.user_data['seller_step'] = 2
         await update.message.reply_text(
-            "💰 **Become a Seller!**\n\n"
-            f"Earn {format_currency(config.SELL_RATE)} per Gmail account\n"
-            f"Minimum: {config.MIN_SELL_QUANTITY} Gmails\n\n"
-            "**Step 1/3:** Upload your UPI QR code\n"
-            "This will be used to pay you for your sales.\n\n"
-            "📸 Send the QR code image now:",
+            "📧 **Submit Your Gmail Accounts**\n\n"
+            "⚠️ **IMPORTANT REQUIREMENTS:**\n"
+            "**• GMAILS MUST NOT HAVE PHONE NUMBER ADDED**\n"
+            "**• MUST NOT HAVE 2-STEP VERIFICATION**\n"
+            "**• MUST NOT HAVE ANY RECOVERY EMAIL/PHONE**\n"
+            "**• MUST BE FRESH AND CLEAN ACCOUNTS ONLY**\n\n"
+            f"Format: `email:password` (one per line)\n"
+            f"Minimum: {config.MIN_SELL_QUANTITY} Gmails\n"
+            f"Rate: {format_currency(config.SELL_RATE)} per Gmail\n\n"
+            "Send your Gmail list now:",
             parse_mode='Markdown'
         )
     
