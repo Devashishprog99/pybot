@@ -203,7 +203,8 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['pending_payment'] = order_id
     
     message = (
-        f"💳 **Payment Initiated**\n\n"
+        f"💳 **Payment Initiated**\n"
+        f"👤 Paying to: **OTT4YOU**\n\n"
         f"Amount: {format_currency(amount)}\n"
         f"Order ID: `{order_id}`\n\n"
         f"👇 **Choose how to pay:**\n"
