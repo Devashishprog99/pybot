@@ -90,7 +90,7 @@ def build_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
     keyboard = [
         ['💰 Wallet', '🛒 Buy Gmails'],
         ['📤 Sell Gmails', '📊 My Activity'],
-        ['ℹ️ Help']
+        ['ℹ️ Help', '⬅️ Back']
     ]
     
     if is_admin:

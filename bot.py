@@ -101,6 +101,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_my_activity(update, context)
     elif text == "ℹ️ Help":
         await update.message.reply_text(help_message(), parse_mode='Markdown')
+    elif text == "⬅️ Back":
+        await update.message.reply_text(
+            welcome_message(),
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id)),
+            parse_mode='Markdown'
+        )
     elif text == "⚙️ Admin Panel":
         await admin_handler.show_admin_panel(update, context)
 
