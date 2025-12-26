@@ -601,4 +601,3 @@ class AdminHandler:
             )
 
 admin_handler = AdminHandler()
-```
