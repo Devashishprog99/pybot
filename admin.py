@@ -371,12 +371,14 @@ class AdminHandler:
         
         # Get sample emails (first 3) and escape underscores
         sample = batch['sample_emails'].split(', ')[:3]
-        sample_text = '\n'.join([f"• `{email.replace('_', '\\_')}`" for email in sample])
+        escaped_sample = [email.replace('_', r'\_') for email in sample]
+        sample_text = '\n'.join([f"• `{email}`" for email in escaped_sample])
         
         # Escape username underscores
         username = batch['username']
         if username:
-            username = username.replace('_', '\\_')
+            username = username.replace('_', r'\_')
+
         
         message = (
             f"📧 **Gmail Batch Approval** ({index + 1}/{total})\n\n"
