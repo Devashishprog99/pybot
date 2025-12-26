@@ -48,7 +48,7 @@ class PaymentManager:
                 order_meta=OrderMeta(
                     notify_url=f"https://your-domain.com/webhook" # This should be your actual webhook
                 ),
-                order_expiry_time=(datetime.now() + timedelta(minutes=5)).isoformat()
+                order_expiry_time=(datetime.utcnow() + timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')
             )
             
             x_api_version = "2023-08-01"
