@@ -299,7 +299,8 @@
                             <th>User ID</th>
                             <th>Username</th>
                             <th>Full Name</th>
-                            <th>Role</th>
+                            <th>Bought</th>
+                            <th>Prov / Sold</th>
                             <th>Wallet</th>
                             <th>Status</th>
                         </tr>
@@ -317,8 +318,8 @@
                         <tr>
                             <th>Seller ID</th>
                             <th>Username</th>
-                            <th>Total Earnings</th>
-                            <th>Pending Gmails</th>
+                            <th>Earnings</th>
+                            <th>Stock</th>
                             <th>Sold</th>
                             <th>Status</th>
                         </tr>
@@ -385,15 +386,16 @@
             const data = await resp.json();
             const tbody = document.querySelector('#users-table tbody');
             tbody.innerHTML = data.map(u => `
-                <tr>
-                    <td><code>${u.user_id}</code></td>
+                <tr onclick="window.location.href='/user/${u.user_id}'" style="cursor: pointer;">
+                    <td><code style="color: var(--primary)">${u.user_id}</code></td>
                     <td>${u.username}</td>
                     <td>${u.full_name}</td>
-                    <td><span class="badge" style="background: rgba(139, 92, 246, 0.1); color: var(--primary)">${u.role}</span></td>
-                    <td>₹${u.wallet_balance}</td>
+                    <td>${u.total_bought || 0}</td>
+                    <td>${u.total_provided || 0} / ${u.total_sold || 0}</td>
+                    <td>₹${(u.wallet_balance || 0).toFixed(2)}</td>
                     <td>${u.is_banned ? '❌ Banned' : '✅ Active'}</td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="7" style="text-align:center">No users found</td></tr>';
         }
 
         async function loadSellers() {
@@ -401,15 +403,15 @@
             const data = await resp.json();
             const tbody = document.querySelector('#sellers-table tbody');
             tbody.innerHTML = data.map(s => `
-                <tr>
-                    <td><code>${s._id || s.seller_id}</code></td>
+                <tr onclick="window.location.href='/user/${s.user_id}'" style="cursor: pointer;">
+                    <td><code style="color: var(--primary)">${s._id || s.seller_id}</code></td>
                     <td>${s.username}</td>
-                    <td>₹${s.total_earnings}</td>
-                    <td>${s.pending_gmails}</td>
-                    <td>${s.sold_gmails}</td>
+                    <td>₹${(s.total_earnings || 0).toFixed(2)}</td>
+                    <td>${s.available_gmails || 0}</td>
+                    <td>${s.sold_gmails || 0}</td>
                     <td><span class="badge ${s.status === 'approved' ? 'badge-success' : 'badge-pending'}">${s.status}</span></td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="6" style="text-align:center">No sellers found</td></tr>';
         }
 
         async function loadTransactions() {

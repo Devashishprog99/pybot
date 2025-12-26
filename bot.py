@@ -469,8 +469,39 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "📞 **Contact Support**\n\n"
             "Please write your **entire message in one text only**.\n"
             "Include your order details or question.",
+            reply_markup=build_contact_keyboard(),
             parse_mode='Markdown'
         )
+    
+    # Global Navigation
+    elif data == "cancel":
+        # Reset all states
+        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message', 'buy_quantity']:
+            context.user_data.pop(key, None)
+        await query.edit_message_text(
+            "❌ Action cancelled. Returning to main menu...",
+            reply_markup=build_main_menu(admin_handler.is_admin(user_id))
+        )
+        await start(update, context) # Call start to show welcome
+
+    elif data == "main_menu" or data == "cancel":
+        # Clean state
+        for key in ['seller_step', 'withdrawal_step', 'awaiting_custom_amount', 'awaiting_quantity', 'awaiting_support_message']:
+            context.user_data.pop(key, None)
+        await start(update, context)
+
+    elif data == "wallet_main":
+        await show_wallet(update, context)
+    
+    elif data == "buy_main":
+        await buyer_handler.show_buy_menu(update, context)
+
+    elif data == "my_activity":
+        await show_my_activity(update, context)
+
+    elif data == "seller_step1":
+        context.user_data['seller_step'] = 1
+        await seller_handler.start_selling(update, context)
     else:
         await query.answer("Feature not implemented yet!")
 

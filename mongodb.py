@@ -215,6 +215,91 @@ class MongoDatabase:
         ]
         
         return list(self.sellers.aggregate(pipeline))
+
+    def get_users_with_stats(self) -> List[Dict]:
+        """Get all users with their purchase and selling statistics"""
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "gmails",
+                    "let": {"user_id": "$user_id"},
+                    "pipeline": [
+                        {"$match": {"$expr": {"$eq": ["$buyer_id", "$$user_id"]}}}
+                    ],
+                    "as": "purchases"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "sellers",
+                    "localField": "user_id",
+                    "foreignField": "user_id",
+                    "as": "seller_info"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "gmails",
+                    "let": {"seller_id_obj": {"$arrayElemAt": ["$seller_info._id", 0]}},
+                    "pipeline": [
+                        {"$match": {"$expr": {"$eq": ["$seller_id", {"$toString": "$$seller_id_obj"}]}}}
+                    ],
+                    "as": "provisions"
+                }
+            },
+            {
+                "$project": {
+                    "user_id": 1,
+                    "username": 1,
+                    "full_name": 1,
+                    "wallet_balance": 1,
+                    "role": 1,
+                    "is_banned": 1,
+                    "created_at": 1,
+                    "total_bought": {"$size": "$purchases"},
+                    "total_provided": {"$size": "$provisions"},
+                    "total_sold": {
+                        "$size": {
+                            "$filter": {
+                                "input": "$provisions",
+                                "cond": {"$eq": ["$$this.status", "sold"]}
+                            }
+                        }
+                    }
+                }
+            },
+            {"$sort": {"created_at": -1}}
+        ]
+        return list(self.users.aggregate(pipeline))
+
+    def get_user_detail(self, user_id: int) -> Optional[Dict]:
+        """Get comprehensive user detail including all activities"""
+        user = self.get_user(user_id)
+        if not user:
+            return None
+        
+        # Get purchases
+        purchases = list(self.gmails.find({"buyer_id": user_id}).sort("sold_at", -1))
+        for p in purchases: p['_id'] = str(p['_id'])
+        
+        # Get seller info
+        seller = self.get_seller(user_id)
+        provisions = []
+        if seller:
+            provisions = list(self.gmails.find({"seller_id": str(seller['seller_id'])}).sort("created_at", -1))
+            for p in provisions: p['_id'] = str(p['_id'])
+        
+        # Get transactions
+        txns = list(self.transactions.find({"user_id": user_id}).sort("created_at", -1))
+        for t in txns: t['_id'] = str(t['_id'])
+        
+        return {
+            "profile": user,
+            "seller_info": seller,
+            "purchases": purchases,
+            "provisions": provisions,
+            "transactions": txns
+        }
     
     def update_seller_earnings(self, seller_id, amount: float) -> bool:
         """Update seller earnings"""

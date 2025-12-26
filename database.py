@@ -405,6 +405,50 @@ class Database:
             return [dict(row) for row in rows]
         finally:
             conn.close()
+
+    def get_users_with_stats(self) -> List[Dict]:
+        """Get all users with their purchase and selling statistics (SQLite)"""
+        conn = self.get_connection()
+        try:
+            rows = conn.execute('''
+                SELECT 
+                    u.*,
+                    (SELECT COUNT(*) FROM gmails WHERE buyer_id = u.user_id) as total_bought,
+                    (SELECT COUNT(*) FROM gmails g JOIN sellers s ON g.seller_id = s.seller_id WHERE s.user_id = u.user_id) as total_provided,
+                    (SELECT COUNT(*) FROM gmails g JOIN sellers s ON g.seller_id = s.seller_id WHERE s.user_id = u.user_id AND g.status = 'sold') as total_sold
+                FROM users u
+                ORDER BY u.created_at DESC
+            ''').fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_user_detail(self, user_id: int) -> Optional[Dict]:
+        """Get comprehensive user detail including all activities (SQLite)"""
+        conn = self.get_connection()
+        try:
+            user = self.get_user(user_id)
+            if not user: return None
+            
+            seller = self.get_seller(user_id)
+            
+            purchases = [dict(r) for r in conn.execute('SELECT * FROM gmails WHERE buyer_id = ? ORDER BY sold_at DESC', (user_id,)).fetchall()]
+            
+            provisions = []
+            if seller:
+                provisions = [dict(r) for r in conn.execute('SELECT * FROM gmails WHERE seller_id = ? ORDER BY created_at DESC', (seller['seller_id'],)).fetchall()]
+                
+            txns = [dict(r) for r in conn.execute('SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC', (user_id,)).fetchall()]
+            
+            return {
+                "profile": user,
+                "seller_info": seller,
+                "purchases": purchases,
+                "provisions": provisions,
+                "transactions": txns
+            }
+        finally:
+            conn.close()
     
     def get_pending_withdrawals(self) -> List[Dict]:
         """Get all pending withdrawal requests"""

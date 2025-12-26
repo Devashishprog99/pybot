@@ -96,18 +96,25 @@ def get_support():
 
 @app.route('/api/users')
 @admin_required
-def get_users():
-    """Get all users"""
-    try:
-        if USE_MONGODB:
-            users = list(db.users.find({}, {'_id': 0}))
-        else:
-            conn = db.get_connection()
-            users = [dict(row) for row in conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()]
-            conn.close()
-        return jsonify(users)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+def get_users_api():
+    """Get all users with statistics"""
+    users = db.get_users_with_stats()
+    return jsonify(users)
+
+@app.route('/api/user/<int:user_id>')
+@admin_required
+def get_user_detail_api(user_id):
+    """Get detailed statistics for a specific user"""
+    detail = db.get_user_detail(user_id)
+    if not detail:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(detail)
+
+@app.route('/user/<int:user_id>')
+@admin_required
+def user_detail_view(user_id):
+    """Render user detail page"""
+    return render_template('user_detail.html', user_id=user_id)
 
 @app.route('/api/sellers')
 @admin_required

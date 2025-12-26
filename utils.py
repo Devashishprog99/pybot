@@ -83,11 +83,12 @@ def build_main_menu(is_admin: bool = False) -> ReplyKeyboardMarkup:
     
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
-def build_wallet_keyboard(balance: float) -> InlineKeyboardMarkup:
+def build_wallet_keyboard() -> InlineKeyboardMarkup:
     """Build wallet keyboard"""
     keyboard = [
         [InlineKeyboardButton("➕ Add Money", callback_data="wallet_add")],
-        [InlineKeyboardButton("📜 Transaction History", callback_data="wallet_history")]
+        [InlineKeyboardButton("📜 Transaction History", callback_data="wallet_history")],
+        [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -104,7 +105,10 @@ def build_amount_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton("₹500", callback_data="amount_500")
         ],
         [InlineKeyboardButton("✏️ Custom Amount", callback_data="amount_custom")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
+        [
+            InlineKeyboardButton("⬅️ Back", callback_data="wallet_main"),
+            InlineKeyboardButton("❌ Cancel", callback_data="cancel")
+        ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -135,17 +139,24 @@ def build_buy_keyboard(available: int) -> InlineKeyboardMarkup:
     if row:
         keyboard.append(row)
     
-    # Custom quantity and cancel
+    # Custom quantity, back and cancel
     keyboard.append([InlineKeyboardButton("✏️ Custom Quantity", callback_data="buy_custom")])
-    keyboard.append([InlineKeyboardButton("❌ Cancel", callback_data="cancel")])
+    keyboard.append([
+        InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu"),
+        InlineKeyboardButton("❌ Cancel", callback_data="cancel")
+    ])
     
     return InlineKeyboardMarkup(keyboard)
 
 def build_confirm_keyboard(action: str, data: str) -> InlineKeyboardMarkup:
     """Build confirmation keyboard"""
+    back_target = "buy_main" if action == "purchase" else "wallet_main"
     keyboard = [
         [InlineKeyboardButton("✅ Confirm", callback_data=f"confirm_{action}_{data}")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
+        [
+            InlineKeyboardButton("⬅️ Back", callback_data=back_target),
+            InlineKeyboardButton("❌ Cancel", callback_data="cancel")
+        ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -177,7 +188,8 @@ def build_my_activity_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("📦 My Purchases", callback_data="activity_purchases")],
         [InlineKeyboardButton("💵 My Sales", callback_data="activity_sales")],
-        [InlineKeyboardButton("💳 Withdrawals", callback_data="activity_withdrawals")]
+        [InlineKeyboardButton("💳 Withdrawals", callback_data="activity_withdrawals")],
+        [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 

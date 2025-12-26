@@ -59,7 +59,7 @@ class SellerHandler:
             f"Earn {format_currency(config.SELL_RATE)} per Gmail account\n"
             f"Minimum: {config.MIN_SELL_QUANTITY} Gmails\n\n"
             "**Step 1/3:** Upload your UPI QR code\n"
-            "This will be used to pay you when your Gmails are sold.\n\n"
+            "This will be used to pay you for your sales.\n\n"
             "📸 Send the QR code image now:",
             parse_mode='Markdown'
         )

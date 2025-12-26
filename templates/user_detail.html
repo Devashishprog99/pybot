@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Detail - Gmail Marketplace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #ffffff10;
+        }
+
+        .btn-back {
+            background: #ffffff10;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-back:hover {
+            background: #ffffff20;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            border-bottom: 1px solid #ffffff10;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #ffffff05;
+            font-size: 0.95rem;
+        }
+
+        .badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #10b98120;
+            color: #10b981;
+        }
+
+        .badge-warning {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+
+        .badge-danger {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ffffff10;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <a href="/dashboard" class="btn-back"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+                <h1 id="user-title" style="margin-top: 1rem;">User Details</h1>
+            </div>
+            <div id="user-id-badge" class="badge"
+                style="background: #ffffff10; color: white; padding: 0.8rem 1.2rem; font-size: 1rem;">ID: -</div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Left Column: Profile & Stats -->
+            <div class="side-col">
+                <div class="card">
+                    <div class="card-title">Profile Info</div>
+                    <div style="margin-top: 1rem;">
+                        <p style="color: var(--text-muted);">Username: <span id="username"
+                                style="color: var(--text);">@...</span></p>
+                        <p style="color: var(--text-muted);">Joined: <span id="joined-at"
+                                style="color: var(--text);">-</span></p>
+                        <p style="color: var(--text-muted);">Role: <span id="user-role" class="badge badge-success"
+                                style="margin-left: 5px;">User</span></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Wallet Balance</div>
+                    <div class="stat-value" id="wallet-balance">₹0.00</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Buyer Activity</div>
+                    <div class="stat-value" id="total-bought">0</div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">TOTAL GMAIL BOUGHT</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Seller Activity</div>
+                    <div class="stat-value" id="total-provided">0</div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">TOTAL EMAILS PROVIDED</p>
+                    <div style="margin-top: 1rem; border-top: 1px solid #ffffff05; padding-top: 1rem;">
+                        <p style="color: var(--text-muted);">Sold: <span id="total-sold"
+                                style="color: var(--success); font-weight: 600;">0</span></p>
+                        <p style="color: var(--text-muted);">Earnings: <span id="total-earnings"
+                                style="color: var(--text);">₹0.00</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Lists -->
+            <div class="main-col">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Recent Transactions</div>
+                    </div>
+                    <div class="table-container">
+                        <table id="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Inventory / Purchases</div>
+                    </div>
+                    <div class="table-container">
+                        <table id="inventory-table">
+                            <thead>
+                                <tr>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Batch ID</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userId = window.location.pathname.split('/').pop();
+
+        async function fetchDetails() {
+            try {
+                const response = await fetch(`/api/user/${userId}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    window.location.href = '/dashboard';
+                    return;
+                }
+
+                // Update Profile Header
+                document.getElementById('user-title').innerText = data.profile.full_name || 'User Detail';
+                document.getElementById('user-id-badge').innerText = `ID: ${data.profile.user_id}`;
+                document.getElementById('username').innerText = `@${data.profile.username || 'unknown'}`;
+                document.getElementById('joined-at').innerText = new Date(data.profile.created_at).toLocaleDateString();
+                document.getElementById('wallet-balance').innerText = `₹${data.profile.wallet_balance.toFixed(2)}`;
+
+                const roleBadge = document.getElementById('user-role');
+                roleBadge.innerText = data.profile.role.toUpperCase();
+                roleBadge.className = `badge ${data.profile.role === 'admin' ? 'badge-danger' : 'badge-success'}`;
+
+                // Update Stats
+                document.getElementById('total-bought').innerText = data.purchases.length;
+                document.getElementById('total-provided').innerText = data.provisions.length;
+                document.getElementById('total-sold').innerText = data.provisions.filter(p => p.status === 'sold').length;
+                document.getElementById('total-earnings').innerText = `₹${(data.seller_info ? data.seller_info.total_earnings : 0).toFixed(2)}`;
+
+                // Update Transactions Table
+                const txnBody = document.querySelector('#transactions-table tbody');
+                txnBody.innerHTML = data.transactions.map(t => `
+                    <tr>
+                        <td>${t.type}</td>
+                        <td style="color: ${t.amount < 0 ? '#ef4444' : '#10b981'}">₹${Math.abs(t.amount).toFixed(2)}</td>
+                        <td><span class="badge ${t.status === 'success' || t.status === 'paid' ? 'badge-success' : 'badge-warning'}">${t.status}</span></td>
+                        <td>${new Date(t.created_at).toLocaleString()}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" style="text-align:center">No transactions found</td></tr>';
+
+                // Update Inventory Table (Show both purchases and provisions)
+                const invBody = document.querySelector('#inventory-table tbody');
+                const allGmail = [...data.purchases, ...data.provisions].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+                invBody.innerHTML = allGmail.map(g => `
+                    <tr>
+                        <td><code>${g.email}</code></td>
+                        <td><span class="badge ${g.status === 'sold' ? 'badge-danger' : 'badge-success'}">${g.status}</span></td>
+                        <td>${g.batch_id || '-'}</td>
+                        <td>${new Date(g.sold_at || g.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" style="text-align:center">No activity found</td></tr>';
+
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('Failed to load user data');
+            }
+        }
+
+        fetchDetails();
+        // Refresh every 30 seconds
+        setInterval(fetchDetails, 30000);
+    </script>
+</body>
+
+</html>
