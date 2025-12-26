@@ -1,11 +1,7 @@
-"""
-Gmail Marketplace Telegram Bot
-Main application file
-"""
 import logging
 import asyncio
 import os
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
     filters, ContextTypes
@@ -207,14 +203,17 @@ async def initiate_direct_payment(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['pending_payment'] = order_id
     
     message = (
-        f"💳 **Add Money to Wallet**\n\n"
+        f"💳 **Payment Initiated**\n\n"
         f"Amount: {format_currency(amount)}\n"
         f"Order ID: `{order_id}`\n\n"
-        f"Click the button below to pay using your preferred app (GPay, PhonePe, Paytm, etc.)."
+        f"👇 **Choose how to pay:**\n"
+        f"• **Inside App**: Opens directly in Telegram.\n"
+        f"• **Browser**: Opens in Chrome/Safari (Better for some UPI apps)."
     )
     
     keyboard = [
-        [InlineKeyboardButton("💳 Pay Now", url=payment_link)],
+        [InlineKeyboardButton("📱 Pay Inside App", web_app=WebAppInfo(url=payment_link))],
+        [InlineKeyboardButton("🌐 Pay in Browser", url=payment_link)],
         [InlineKeyboardButton("❌ Cancel Payment", callback_data=f"cancel_payment_{order_id}")]
     ]
     
