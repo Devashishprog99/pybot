@@ -56,7 +56,107 @@ def dashboard():
         return render_template('dashboard.html', stats=stats, analytics=analytics)
     except Exception as e:
         print(f"DASHBOARD ERROR: {e}")
-        return f"<h3>Database Error</h3><p>{str(e)}</p>", 500
+        return f"<h3>Unexpected error</h3><p>{str(e)}</p>", 500
+
+# ==================== ADMIN MANAGEMENT ROUTES ====================
+
+@app.route('/admin/sellers')
+@admin_required
+def admin_sellers():
+    """View all sellers with approve/reject options"""
+    try:
+        sellers = db.get_all_sellers_with_stats()
+        return render_template('admin_sellers.html', sellers=sellers)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading sellers</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/sellers/<int:seller_id>/approve', methods=['POST'])
+@admin_required
+def approve_seller_web(seller_id):
+    """Approve a seller"""
+    try:
+        admin_id = int(session['admin_id'])
+        db.approve_seller(seller_id, admin_id, approved=True)
+        return jsonify({'success': True, 'message': 'Seller approved successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/sellers/<int:seller_id>/reject', methods=['POST'])
+@admin_required
+def reject_seller_web(seller_id):
+    """Reject a seller"""
+    try:
+        admin_id = int(session['admin_id'])
+        db.approve_seller(seller_id, admin_id, approved=False)
+        return jsonify({'success': True, 'message': 'Seller rejected successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/gmails')
+@admin_required
+def admin_gmails():
+    """View pending Gmail batches"""
+    try:
+        batches = db.get_pending_gmail_batches()
+        return render_template('admin_gmails.html', batches=batches)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading Gmail batches</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/gmails/<batch_id>/approve', methods=['POST'])
+@admin_required
+def approve_gmail_batch_web(batch_id):
+    """Approve a Gmail batch"""
+    try:
+        admin_id = int(session['admin_id'])
+        db.approve_gmail_batch(batch_id, admin_id)
+        return jsonify({'success': True, 'message': 'Gmail batch approved successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/gmails/<batch_id>/reject', methods=['POST'])
+@admin_required
+def reject_gmail_batch_web(batch_id):
+    """Reject a Gmail batch"""
+    try:
+        admin_id = int(session['admin_id'])
+        db.reject_gmail_batch(batch_id, admin_id)
+        return jsonify({'success': True, 'message': 'Gmail batch rejected successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/admin/buyers')
+@admin_required
+def admin_buyers():
+    """View all buyer purchases"""
+    try:
+        purchases = db.get_all_purchases()
+        return render_template('admin_buyers.html', purchases=purchases)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading purchases</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/payments')
+@admin_required
+def admin_payments():
+    """View sellers awaiting payment"""
+    try:
+        payments = db.get_sellers_awaiting_payment()
+        return render_template('admin_payments.html', payments=payments)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return f"<h3>Error loading pending payments</h3><p>{str(e)}</p>", 500
+
+@app.route('/admin/payments/<int:user_id>/mark_paid', methods=['POST'])
+@admin_required
+def mark_payment_web(user_id):
+    """Mark seller as paid"""
+    try:
+        count = db.mark_seller_gmails_as_paid(user_id)
+        return jsonify({'success': True, 'message': f'{count} Gmail(s) marked as paid', 'count': count})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/pay/<session_id>')
 @app.route('/pay/<env_override>/<session_id>')
