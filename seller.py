@@ -35,7 +35,9 @@ class SellerHandler:
                 # Auto-approve the seller immediately
                 seller_record = db.get_seller(user_id)
                 if seller_record:
-                    db.approve_seller(seller_record['seller_id'], user_id, approved=True)
+                    # Use first admin ID from config for auto-approval
+                    admin_id = config.ADMIN_IDS[0] if config.ADMIN_IDS else user_id
+                    db.approve_seller(seller_record['seller_id'], admin_id, approved=True)
                     is_new_seller = True
                     
                     # Notify admins about new seller
