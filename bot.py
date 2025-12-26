@@ -79,27 +79,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await buyer_handler.process_custom_quantity(update, context)
         return
 
-    elif context.user_data.get('awaiting_upi_id'):
-        await process_upi_id(update, context)
+    elif text == "/check" and admin_handler.is_admin(user_id):
+        # Configuration health check
+        dash_status = "✅ Configured" if config.DASHBOARD_URL and "localhost" not in config.DASHBOARD_URL else "⚠️ NOT SET (using fallbacks)"
+        
+        message = (
+            "⚙️ **System Configuration Check**\n\n"
+            f"Mode: `{config.CASHFREE_ENV}`\n"
+            f"Dashboard URL: `{dash_status}`\n"
+            f"Admin ID: `{user_id}`\n\n"
+            f"If Dashboard URL is NOT SET, the bot will use direct Cashfree links instead of the bridge."
+        )
+        await update.message.reply_text(message, parse_mode='Markdown')
         return
 
-    # Support message (moved check to before menu handlers)
+    # Support message check
     if context.user_data.get('awaiting_support_message'):
-        # Customer support message
-        user_id = update.effective_user.id
         message = update.message.text
         if db.save_support_message(user_id, message):
             await update.message.reply_text("✅ Message sent successfully! Admin will review it soon.")
-            # Notify admin
             for admin_id in config.ADMIN_IDS:
-                try:
-                    await context.bot.send_message(
-                        admin_id,
-                        f"✉️ **New Support Message**\n\n"
-                        f"👤 User ID: `{user_id}`\n"
-                        f"💬 Message: {message}",
-                        parse_mode='Markdown'
-                    )
+                try: await context.bot.send_message(admin_id, f"✉️ **New Support Message**\n\n👤 User ID: `{user_id}`\n💬 Message: {message}", parse_mode='Markdown')
                 except: pass
         else:
             await update.message.reply_text("❌ Failed to send message. Please try again.")
@@ -119,8 +119,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(help_message(), parse_mode='Markdown')
     elif text == "⚙️ Admin Panel":
         await admin_handler.show_admin_panel(update, context)
-    
-    # User ID detection for admins (only if not a menu command)
+
+    # User ID detection for admins
     elif admin_handler.is_admin(user_id):
         # Check if forwarded message or numeric ID
         target_uid = None

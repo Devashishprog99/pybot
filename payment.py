@@ -55,8 +55,18 @@ class PaymentManager:
                 
             payment_session_id = order_response.data.payment_session_id
             
-            # Dashboard Bridge Link
-            payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"
+            # Determine the fastest/most reliable link
+            # Default to direct Cashfree link if dashboard URL is not set or set to localhost
+            if not config.DASHBOARD_URL or "localhost" in config.DASHBOARD_URL or "127.0.0.1" in config.DASHBOARD_URL:
+                if config.CASHFREE_ENV.upper() == 'PRODUCTION':
+                    payment_link = f"https://payments.cashfree.com/order/{payment_session_id}"
+                else:
+                    payment_link = f"https://payments-test.cashfree.com/order/{payment_session_id}"
+            else:
+                # Use the professional bridge
+                payment_link = f"{config.DASHBOARD_URL.rstrip('/')}/pay/{payment_session_id}"
+            
+            print(f"DEBUG: Generated Link ({config.CASHFREE_ENV}): {payment_link}")
             
             # Save transaction
             txn_id = db.create_transaction(
