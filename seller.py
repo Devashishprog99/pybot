@@ -37,6 +37,23 @@ class SellerHandler:
                 if seller_record:
                     db.approve_seller(seller_record['seller_id'], user_id, approved=True)
                     is_new_seller = True
+                    
+                    # Notify admins about new seller
+                    username = update.effective_user.username or "No username"
+                    full_name = update.effective_user.full_name or "No name"
+                    for admin_id in config.ADMIN_IDS:
+                        try:
+                            await context.bot.send_message(
+                                admin_id,
+                                f"👤 **New Seller Joined!**\n\n"
+                                f"🆔 User ID: `{user_id}`\n"
+                                f"👤 Username: @{username}\n"
+                                f"📛 Name: {full_name}\n\n"
+                                f"User registered as seller.",
+                                parse_mode='Markdown'
+                            )
+                        except:
+                            pass
         
         # Show registration confirmation for new sellers
         registration_msg = "✅ **Registered as seller!**\n\n" if is_new_seller else ""
@@ -57,6 +74,7 @@ class SellerHandler:
             "Send your Gmail list now:",
             parse_mode='Markdown'
         )
+
     
     @staticmethod
     async def handle_upi_qr(update: Update, context: ContextTypes.DEFAULT_TYPE):

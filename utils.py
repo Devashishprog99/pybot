@@ -221,23 +221,13 @@ def build_withdrawal_keyboard() -> InlineKeyboardMarkup:
 # ==================== ADMIN KEYBOARDS ====================
 
 def build_admin_keyboard() -> InlineKeyboardMarkup:
-    """Build admin main menu keyboard"""
+    """Build admin main menu keyboard - simplified"""
     keyboard = [
-        [
-            InlineKeyboardButton("👥 Users", callback_data="admin_users"),
-            InlineKeyboardButton("📋 Sellers", callback_data="admin_sellers")
-        ],
-        [
-            InlineKeyboardButton("📧 Gmails", callback_data="admin_gmails"),
-            InlineKeyboardButton("💰 Withdrawals", callback_data="admin_withdrawals")
-        ],
-        [
-            InlineKeyboardButton("💸 Pending Payments", callback_data="admin_pending_payments")
-        ],
-        [InlineKeyboardButton("📊 Dashboard", callback_data="admin_dashboard")],
-        [InlineKeyboardButton("🏠 Main Menu", callback_data="main_menu")]
+        [InlineKeyboardButton("👥 Users", callback_data="admin_users")],
+        [InlineKeyboardButton("📧 Gmails", callback_data="admin_gmails")]
     ]
     return InlineKeyboardMarkup(keyboard)
+
 
 def build_approval_keyboard(item_type: str, item_id: str) -> InlineKeyboardMarkup:
     """Build approval/rejection keyboard"""
