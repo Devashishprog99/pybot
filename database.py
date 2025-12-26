@@ -56,6 +56,15 @@ class Database:
         finally:
             conn.close()
     
+    def get_all_users(self) -> List[Dict]:
+        """Get all users"""
+        conn = self.get_connection()
+        try:
+            rows = conn.execute('SELECT * FROM users ORDER BY created_at DESC').fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+    
     def update_wallet(self, user_id: int, amount: float) -> bool:
         """Update user wallet balance"""
         conn = self.get_connection()
