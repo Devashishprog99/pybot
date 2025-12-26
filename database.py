@@ -696,5 +696,34 @@ class Database:
         finally:
             conn.close()
 
+    def get_all_purchases(self) -> List[Dict]:
+        """Get all buyer purchases for admin panel"""
+        conn = self.get_connection()
+        try:
+            query = '''
+                SELECT 
+                    g.gmail_id,
+                    g.email,
+                    g.price,
+                    g.sold_at,
+                    buyer.user_id as buyer_id,
+                    buyer.username as buyer_username,
+                    seller_user.username as seller_username,
+                    t.transaction_id,
+                    t.amount
+                FROM gmails g
+                LEFT JOIN users buyer ON g.buyer_id = buyer.user_id
+                LEFT JOIN sellers s ON g.seller_id = s.seller_id
+                LEFT JOIN users seller_user ON s.user_id = seller_user.user_id
+                LEFT JOIN transactions t ON t.user_id = buyer.user_id AND t.type = 'purchase'
+                WHERE g.status = 'sold'
+                ORDER BY g.sold_at DESC
+            '''
+            
+            rows = conn.execute(query).fetchall()
+            return [dict(row) for row in rows]
+        finally:
+            conn.close()
+
 # Global database instance
 db = Database()
