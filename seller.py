@@ -189,9 +189,11 @@ class SellerHandler:
                                           user_id: int, count: int, batch_id: str):
         """Notify admins of new seller submission"""
         user = db.get_user(user_id)
+        username = user.get('username', str(user_id)) if user else str(user_id)
+        
         message = (
             f"🔔 **New Seller Submission**\n\n"
-            f"👤 User: {user['username']} (ID: {user_id})\n"
+            f"👤 User: @{username} (ID: {user_id})\n"
             f"📧 Gmails: {count}\n"
             f"🆔 Batch: `{batch_id}`\n\n"
             f"Review in Admin Panel ⚙️"
