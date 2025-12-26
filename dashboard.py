@@ -63,6 +63,16 @@ def pay(session_id):
     print(f"DEBUG: Payment Bridge accessed. Session: {session_id[:10]}... Mode: {env}")
     return render_template('pay.html', session_id=session_id, env=env.lower())
 
+@app.route('/diag')
+def diag():
+    """Diagnostic route to check environment setup"""
+    return jsonify({
+        "CASHFREE_ENV": config.CASHFREE_ENV.upper(),
+        "DASHBOARD_URL": config.DASHBOARD_URL,
+        "ADMIN_COUNT": len(config.ADMIN_IDS),
+        "STATUS": "OK"
+    })
+
 @app.route('/api/analytics')
 @admin_required
 def get_analytics():

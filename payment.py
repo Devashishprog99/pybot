@@ -51,6 +51,7 @@ class PaymentManager:
                 return {'success': False, 'error': 'Failed to create order'}
                 
             payment_session_id = order_response.data.payment_session_id
+            print(f"DEBUG: Created {config.CASHFREE_ENV} Collect Order: {order_id} | Session: {payment_session_id[:10]}...")
             
             # Base URL for payment link
             if config.CASHFREE_ENV.upper() == 'PRODUCTION':
@@ -149,6 +150,7 @@ class PaymentManager:
                 return {'success': False, 'error': 'Failed to create order'}
                 
             payment_session_id = order_response.data.payment_session_id
+            print(f"DEBUG: Created {config.CASHFREE_ENV} Collect Order: {order_id} | Session: {payment_session_id[:10]}...")
             
             # Base URL for payment link
             if config.CASHFREE_ENV.upper() == 'PRODUCTION':
